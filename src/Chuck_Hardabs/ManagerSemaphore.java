@@ -1,6 +1,6 @@
 /*
  * Chuck_Hardabs:ManagerSemaphore
- * Created on 2/21/2018
+ * Created on 2/20/2018
  *
  * Author(s):
  * -Justin Ritter
