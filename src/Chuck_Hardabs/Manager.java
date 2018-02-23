@@ -1,3 +1,12 @@
+/*
+ * G8R.app:G8RClient
+ *
+ * Date Created: Feb/01/2018
+ * Author:
+ *   -Justin Ritter
+ */
+package Chuck_Hardabs;
+
 import java.util.Date;
 import java.util.Random;
 import java.util.ArrayList;
@@ -49,7 +58,6 @@ public class Manager {
             	System.exit(1);
             }
         }
-
 	}
 
 	class Celebrity implements Runnable
