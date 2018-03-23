@@ -59,45 +59,23 @@ public class ManagerMonitor {
         }
     }
 
-    private synchronized void enque() throws InterruptedException {
-        while(isFull()) {
-            wait();
-        }
-        notify();
-    }
-
-    private synchronized void deque() throws InterruptedException {
-        while(isEmpty()) {
-            wait();
-        }
-        notify();
-    }
-
-    private boolean isFull() {
-        synchronized(this) {
-            return numFansInLine >= MAX_ALLOWED_IN_QUEUE-1;
-        }
-    }
-
-    private boolean isEmpty() {
-        synchronized(this) {
-            return numFansInLine <= MIN_FANS;
-        }
-    }
-
     class Celebrity implements Runnable
     {
         @Override
         public void run() {
             while (true)
             {
-                try {
-                    deque();
-                } catch(InterruptedException e) {
-                    e.printStackTrace();
-                }
+
                 // Check to see if celebrity flips out
                 synchronized(this) {
+                    while(numFansInLine < 3) {
+                        try {
+                            wait();
+                        } catch(InterruptedException e) {
+                            System.err.println(e.toString());
+                            System.exit(1);
+                        }
+                    }
                     checkCelebrityOK();
                 }
 
@@ -112,6 +90,7 @@ public class ManagerMonitor {
                 // Adjust the numFans variable
                 synchronized(this) {
                     numFansInLine -= MIN_FANS;
+                    notify();
                 }
 
                 // Take a break
@@ -164,18 +143,11 @@ public class ManagerMonitor {
                 System.exit(1);
             }
 
-            //waits for a spot in line
-            try {
-                enque();
-            } catch(InterruptedException e) {
-                System.err.println();
-                System.exit(1);
-            }
 
             // Get in line
-            System.out.println(Thread.currentThread() + ": gets in line");
-            line.add(0, this);
             synchronized(this) {
+                System.out.println(Thread.currentThread() + ": gets in line");
+                line.add(0, this);
                 numFansInLine++;
             }
         }
