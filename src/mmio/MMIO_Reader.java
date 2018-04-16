@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 
@@ -308,9 +309,25 @@ public class MMIO_Reader {
         //System.out.println(tree.printTree());
 
         //spawns SIZEOF_READWRITERS number of threads
+        ArrayList<Thread> threads = new ArrayList<>();
         for(int i = 0; i < SIZEOF_READERWRITER; i++) {
-            new Thread(new Reader(), "Reader " + i++).start();
-            new Thread(new Writer(), "Writer " + i++).start();
+            Thread read = new Thread(new Reader(), "Reader " + i++);
+            Thread write = new Thread(new Writer(), "Writer " + i++);
+
+            read.start();
+            write.start();
+
+            threads.add(read);
+            threads.add(write);
+        }
+
+        //join all threads spawned
+        for(Thread t : threads) {
+            try {
+                t.join();
+            } catch(InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
