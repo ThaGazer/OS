@@ -13,7 +13,7 @@ public class triangles {
 
     private static List<Integer> pointsX = new ArrayList<>();
     private static List<Integer> pointsY = new ArrayList<>();
-    private static Integer totalPnts, totalRight = 0;
+    private static Integer totalPnts;
 
     public static void main(String[] args) throws Exception {
         if(args.length != 1) {
@@ -32,9 +32,7 @@ public class triangles {
 
         if(totalPnts >= 3) {
             readPoints(scn);
-
-            findTriangles();
-            System.out.println(totalRight);
+            System.out.println(findTriangles());
         } else {
             throw new Exception(errNoTriangle);
         }
@@ -54,7 +52,9 @@ public class triangles {
         }
     }
 
-    private static void findTriangles() {
+    private static int findTriangles() {
+        int numOfRightTri = 0;
+
         for(Integer i = 0; i < totalPnts; i++) {
             for(Integer j = i+1; j < totalPnts; j++) {
                 for(Integer k = i+2; k < totalPnts; k++) {
@@ -82,12 +82,13 @@ public class triangles {
                         }
 
                         if(a + b == c) {
-                            totalRight++;
+                            numOfRightTri++;
                         }
                     }
                 }
             }
         }
+        return numOfRightTri;
     }
 
     /**
