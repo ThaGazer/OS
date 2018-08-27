@@ -5,6 +5,7 @@ import javafx.util.Pair;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.SQLOutput;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -22,21 +23,14 @@ public class SpeedTest {
         handleCmdLine(args);
         fillAFile(fileName);
 
-        for(int i = 0; i < loopCount; i++) {
-            try {
-                System.out.println("------------Program output------------");
-                long start = System.nanoTime();
-                triangles.main(new String[]{fileName});
-                long stop = System.nanoTime();
-                System.out.println("--------------------------------------");
+        handleOutput(runMain(triangles.class, new String[]{args[1]}));
 
-                System.out.println("Program runtime " + i + ": " + (stop-start) + "ns\n\n");
-                times.add((stop-start));
-            } catch(Exception e) {
-                System.err.println(errTriangleRun + e.getMessage());
-            }
-        }
-        System.out.println("Program average runtime: " + calculateAvg(times) + "s");
+        handleOutput(runMain(threadedTriangles.class, new String[]{args[1]}));
+    }
+
+    private static void handleOutput(String[] progOut) {
+        System.out.println(triangles.class.getSimpleName() + " total runtime: " + progOut[0] + "s");
+        System.out.println(triangles.class.getSimpleName() + " average runtime: " + progOut[1] + "s");
     }
 
     private static void handleCmdLine(String[] args) {
@@ -48,26 +42,50 @@ public class SpeedTest {
         fileName = args[1];
     }
 
-    private static double calculateAvg(List<Long> times) {
+    private static String[] runMain(Class<?> type, String[] args) {
+        for(int i = 0; i < loopCount; i++) {
+            try {
+                String topOutput = "------------" + type.getSimpleName() + " output------------";
+                System.out.println(topOutput);
+                long start = System.nanoTime();
+                type.getDeclaredMethod("main", String[].class).invoke(null,(Object)args);
+                long stop = System.nanoTime();
+
+                for(int j = 0; j < topOutput.length(); j++) {
+                    System.out.print("-");
+                }
+                System.out.println();
+
+                System.out.println("Program runtime " + i + ": " + (stop-start) + "ns");
+                times.add((stop-start));
+            } catch(Exception e) {
+                System.err.println(errTriangleRun + e.getCause());
+                return new String[]{};
+            }
+        }
+        return calculateAvg(times);
+    }
+
+    private static String[] calculateAvg(List<Long> times) {
         long sum = 0;
         //times.forEach((k) -> sum[0] =+ k);
         for(Long time : times) {
             sum += time;
         }
         sum = TimeUnit.NANOSECONDS.toSeconds(sum);
-        System.out.println("Program total runtime: " + sum + "s");
-        return (double)sum/times.size();
+
+        return new String[]{String.valueOf(sum), String.valueOf((double)sum/times.size())};
     }
 
     private static void fillAFile(String fileName) throws IOException {
-        int pointCount = 1000;
+        int pointCount = 100;
         FileWriter fileWriter = new FileWriter(new File(fileName));
         Random rnd = new Random(System.currentTimeMillis());
         Set<Pair<Integer, Integer>> pointSet = new HashSet<>();
 
         fileWriter.write(pointCount + "\n");
         while(pointSet.size() != pointCount) {
-            pointSet.add(new Pair<>(rnd.nextInt(100), rnd.nextInt(100)));
+            pointSet.add(new Pair<>(rnd.nextInt(10), rnd.nextInt(10)));
         }
 
         for(Pair p : pointSet) {

@@ -9,13 +9,16 @@ public class triangles {
     private static final String errCmdUse = "usage: <filename>";
     private static final String errFOF = "file not found";
     private static final String errNoTriangle = "could not form a triangle with points provided";
-    private static final String errPoints = "we got problems";
+    private static final String errPoints = "number of points in file do not match";
 
-    private static List<Integer> pointsX = new ArrayList<>();
-    private static List<Integer> pointsY = new ArrayList<>();
+    private static List<Integer> pointsX;
+    private static List<Integer> pointsY;
     private static Integer totalPnts;
 
     public static void main(String[] args) throws Exception {
+        pointsX = new ArrayList<>();
+        pointsY = new ArrayList<>();
+
         if(args.length != 1) {
             throw new IllegalArgumentException(errCmdUse);
         }
@@ -55,13 +58,13 @@ public class triangles {
     private static int findTriangles() {
         int numOfRightTri = 0;
 
-        for(Integer i = 0; i < totalPnts; i++) {
-            for(Integer j = i+1; j < totalPnts; j++) {
-                for(Integer k = i+2; k < totalPnts; k++) {
+        for(int i = 0; i < totalPnts-2; i++) {
+            for(int j = i+1; j < totalPnts-1; j++) {
+                for(int k = j+1; k < totalPnts; k++) {
                     int x1 = pointsX.get(i),x2 = pointsX.get(j),x3 = pointsX.get(k),
-                            y1 = pointsY.get(j),y2 = pointsY.get(j),y3 = pointsY.get(k);
+                            y1 = pointsY.get(i),y2 = pointsY.get(j),y3 = pointsY.get(k);
 
-                    if(x1 != x2 && x1 != x3 || y1 != y2 && y1 != y3) {
+                    if(x1 != x2 || x1 != x3 && y1 != y2 || y1 != y3) {
                         int a,b,c,temp;
                         c = distanceFormula(x1,y1,x2,y2);
 
