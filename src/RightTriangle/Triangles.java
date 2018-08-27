@@ -5,10 +5,9 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 
-public class triangles {
-    private static final String errCmdUse = "usage: <filename>";
-    private static final String errFOF = "file not found";
-    private static final String errNoTriangle = "could not form a triangle with points provided";
+public class Triangles {
+    static final String errParams = "usage: <filename>";
+    static final String errFNF = "file not found";
     private static final String errPoints = "number of points in file do not match";
 
     private static List<Integer> pointsX;
@@ -18,36 +17,29 @@ public class triangles {
     public static void main(String[] args) throws Exception {
         pointsX = new ArrayList<>();
         pointsY = new ArrayList<>();
+        Triangles t = new Triangles();
 
-        if(args.length != 1) {
-            throw new IllegalArgumentException(errCmdUse);
+        if(args.length < 1) {
+            throw new IllegalArgumentException(errParams);
         }
 
-        File file = new File(args[0]);
-
-        if(!file.isFile()) {
-            throw new FileNotFoundException(errFOF);
-        }
-
-        Scanner scn = new Scanner(file);
-
-        totalPnts = Integer.parseInt(scn.next());
-
-        if(totalPnts >= 3) {
-            readPoints(scn);
-            System.out.println(findTriangles());
-        } else {
-            throw new Exception(errNoTriangle);
-        }
+        t.readPoints(args[0]);
+        System.out.println(t.findTriangles());
     }
 
-    private static void readPoints(Scanner scn) throws Exception {
-        for(int i = 0; i < (totalPnts*2); i++) {
-            if((i%2) == 0) {
-                pointsX.add(Integer.parseInt(scn.next()));
-            } else {
-                pointsY.add(Integer.parseInt(scn.next()));
+    protected void readPoints(String fileName) throws Exception {
+        try(Scanner scn = new Scanner(new File(fileName))) {
+            totalPnts = scn.nextInt();
+
+            for(int i = 0; i < (totalPnts*2); i++) {
+                if((i%2) == 0) {
+                    pointsX.add(Integer.parseInt(scn.next()));
+                } else {
+                    pointsY.add(Integer.parseInt(scn.next()));
+                }
             }
+        } catch(FileNotFoundException fnfe) {
+            System.err.println(errFNF);
         }
 
         if(pointsX.size() != pointsY.size() && pointsX.size() != totalPnts) {
@@ -55,7 +47,7 @@ public class triangles {
         }
     }
 
-    private static int findTriangles() {
+    protected int findTriangles() {
         int numOfRightTri = 0;
 
         for(int i = 0; i < totalPnts-2; i++) {

@@ -5,7 +5,6 @@ import javafx.util.Pair;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.SQLOutput;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -17,20 +16,21 @@ public class SpeedTest {
 
     private static int loopCount;
     private static String fileName;
-    private static List<Long> times = new ArrayList<>();
 
     public static void main(String[] args) throws IOException {
         handleCmdLine(args);
         fillAFile(fileName);
 
-        handleOutput(runMain(triangles.class, new String[]{args[1]}));
+        StringBuilder out = new StringBuilder();
+        out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1]})));
+        out.append(handleOutput(TrianglesClass.class.getSimpleName(), runMain(TrianglesClass.class, new String[]{args[1]})));
+        out.append(handleOutput(TrianglesThreaded.class.getSimpleName(), runMain(TrianglesThreaded.class, args)));
 
-        handleOutput(runMain(threadedTriangles.class, new String[]{args[1]}));
+        System.out.println("\n" + out);
     }
 
-    private static void handleOutput(String[] progOut) {
-        System.out.println(triangles.class.getSimpleName() + " total runtime: " + progOut[0] + "s");
-        System.out.println(triangles.class.getSimpleName() + " average runtime: " + progOut[1] + "s");
+    private static String handleOutput(String name, String[] progOut) {
+        return name + " total runtime: " + progOut[0] + "ms\n" + name + " average runtime: " + progOut[1] + "ms\n\n";
     }
 
     private static void handleCmdLine(String[] args) {
@@ -43,10 +43,12 @@ public class SpeedTest {
     }
 
     private static String[] runMain(Class<?> type, String[] args) {
+        List<Long> times = new ArrayList<>();
         for(int i = 0; i < loopCount; i++) {
             try {
                 String topOutput = "------------" + type.getSimpleName() + " output------------";
                 System.out.println(topOutput);
+
                 long start = System.nanoTime();
                 type.getDeclaredMethod("main", String[].class).invoke(null,(Object)args);
                 long stop = System.nanoTime();
@@ -72,13 +74,13 @@ public class SpeedTest {
         for(Long time : times) {
             sum += time;
         }
-        sum = TimeUnit.NANOSECONDS.toSeconds(sum);
+        sum = TimeUnit.NANOSECONDS.toMillis(sum);
 
         return new String[]{String.valueOf(sum), String.valueOf((double)sum/times.size())};
     }
 
     private static void fillAFile(String fileName) throws IOException {
-        int pointCount = 100;
+        int pointCount = 50;
         FileWriter fileWriter = new FileWriter(new File(fileName));
         Random rnd = new Random(System.currentTimeMillis());
         Set<Pair<Integer, Integer>> pointSet = new HashSet<>();
