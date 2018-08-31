@@ -5,9 +5,9 @@ import java.io.FileNotFoundException;
 import java.util.*;
 
 
-public class Triangles {
+public class TrianglesBasic {
     static final String errParams = "usage: <filename>";
-    static final String errFNF = "file not found";
+    static final String errFNF = "file not found ";
     private static final String errPoints = "number of points in file do not match";
 
     private static List<Integer> pointsX;
@@ -17,7 +17,7 @@ public class Triangles {
     public static void main(String[] args) throws Exception {
         pointsX = new ArrayList<>();
         pointsY = new ArrayList<>();
-        Triangles t = new Triangles();
+        TrianglesBasic t = new TrianglesBasic();
 
         if(args.length < 1) {
             throw new IllegalArgumentException(errParams);

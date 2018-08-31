@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 public class SpeedTest {
 
-    private static final String errParams = "usage: <number of test> <fileName>";
+    private static final String errParams = "usage: <number of test> <fileName> <nProcs>";
     private static final String errTriangleRun = "something happened when running the program: ";
 //    private static final String errFile = "could not locate file: ";
 
@@ -22,9 +22,9 @@ public class SpeedTest {
         fillAFile(fileName);
 
         StringBuilder out = new StringBuilder();
-        out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1]})));
+        out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
         out.append(handleOutput(TrianglesClass.class.getSimpleName(), runMain(TrianglesClass.class, new String[]{args[1]})));
-        out.append(handleOutput(TrianglesThreaded.class.getSimpleName(), runMain(TrianglesThreaded.class, args)));
+        out.append(handleOutput(TrianglesThreaded.class.getSimpleName(), runMain(TrianglesThreaded.class, new String[]{args[1], args[2]})));
 
         System.out.println("\n" + out);
     }
@@ -34,7 +34,7 @@ public class SpeedTest {
     }
 
     private static void handleCmdLine(String[] args) {
-        if(args.length < 1 || args.length > 2) {
+        if(args.length < 2 || args.length > 3) {
             throw new IllegalArgumentException(errParams);
         }
 

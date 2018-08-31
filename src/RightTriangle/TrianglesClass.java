@@ -6,12 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class TrianglesClass extends Triangles {
+public class TrianglesClass extends TrianglesBasic {
 
     private static final String errParams = "Usage: <filename> <thread count>";
     private static final String errPoints = "we got problems";
 
-    private List<Point> points = new ArrayList<>();
+    protected List<Point> points = new ArrayList<>();
 
     public static void main(String[] args) throws Exception {
         TrianglesClass t = new TrianglesClass();
@@ -52,12 +52,37 @@ public class TrianglesClass extends Triangles {
         for(int i = 0; i < points.size()-2; i++) {
             for(int j = i+1; j < points.size()-1; j++) {
                 for(int k = j+1; k < points.size(); k++) {
-                    if(points.get(i).rightCheck(points.get(j), points.get(k))) {
+                    if(rightCheck(points.get(i), points.get(j), points.get(k))) {
                         totalRight++;
                     }
                 }
             }
         }
         return totalRight;
+    }
+
+    private boolean rightCheck(Point p1, Point p2, Point p3) {
+        if(p1.isZeroSlope(p2, p3)) {
+            int a,b,c, temp;
+            c = p1.distance(p2);
+
+            a = p1.distance(p3);
+            if(a > c) {
+                temp = c;
+                c = a;
+                a = temp;
+            }
+
+            b = p2.distance(p3);
+            if(b > c) {
+                temp = c;
+                c = b;
+                b = temp;
+            }
+
+            return a+b == c;
+        } else {
+            return false;
+        }
     }
 }
