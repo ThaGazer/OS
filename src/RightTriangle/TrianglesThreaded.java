@@ -68,7 +68,7 @@ public class TrianglesThreaded extends TrianglesClass {
 
         int beg = 0, end = amountPer;
         for(int i = 0; i < nprocs; i++) {
-            pool.execute(new RightTriangleFinder(points.subList(beg, end)));
+            pool.execute(new RightTriangleFinder(points.subList(beg, end), end));
             beg += amountPer;
             end += amountPer;
 
@@ -90,18 +90,20 @@ public class TrianglesThreaded extends TrianglesClass {
 
     private class RightTriangleFinder implements Runnable {
 
-        List<Point> threadPoints;
+        int workLoad;
+        Point startPoint;
 
-        RightTriangleFinder(List<Point> pIn) {
-            threadPoints = pIn;
+        RightTriangleFinder(Point pIn, int amount) {
+            startPoint = pIn;
+            workLoad = amount;
         }
 
         @Override
         public void run() {
-            for(Point p : threadPoints) {
-                for(int i = points.indexOf(p)+1; i < points.size(); i++) {
-                    for(int j = i; j < points.size(); j++) {
-                        Triangle t = new Triangle(p, points.get(i), points.get(j));
+            for(int i = points.indexOf(startPoint); i < points.size(); i++) {
+                for(int j = i+1; j < points.size(); j++) {
+                    for(int k = i; k < points.size(); k++) {
+                        Triangle t = new Triangle(points.get(i), points.get(j), points.get(k));
                         try {
                             sem.acquire();
                             if (!checkTriangles.contains(t) && t.isRight()) {
