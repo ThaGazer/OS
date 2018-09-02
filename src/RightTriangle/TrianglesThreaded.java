@@ -9,6 +9,7 @@ import java.util.concurrent.*;
 
 public class TrianglesThreaded extends TrianglesClass {
     private static final String errParams = "Usage: <filename> <nPros>";
+    private static final String errFNF = "file not found ";
     private static final String errSemAcquire = "could not acquire the lock: ";
 
     private int nprocs = 0;
@@ -91,33 +92,30 @@ public class TrianglesThreaded extends TrianglesClass {
 
         List<Point> threadPoints;
 
-        public RightTriangleFinder(List<Point> pIn) {
+        RightTriangleFinder(List<Point> pIn) {
             threadPoints = pIn;
         }
 
         @Override
         public void run() {
-            String out = "";
             for(Point p : threadPoints) {
-                for(int i = 0; i < points.size()-1; i++) {
-                    Triangle t = new Triangle(p, points.get(i), points.get(i+1));
-                    out += (Thread.currentThread().getName() + " found triangle: " + t + "\n");
-                    try {
-                        sem.acquire();
-                        if(!checkTriangles.contains(t) && t.isRight()) {
+                for(int i = points.indexOf(p)+1; i < points.size(); i++) {
+                    for(int j = i; j < points.size(); j++) {
+                        Triangle t = new Triangle(p, points.get(i), points.get(j));
+                        try {
+                            sem.acquire();
+                            if (!checkTriangles.contains(t) && t.isRight()) {
                                 totalRightTriangles++;
-                                out += "^ right triangle\n";
                                 checkTriangles.add(t);
                                 sem.release();
+                            }
+                            sem.release();
+                        } catch (InterruptedException e) {
+                            System.err.println(errSemAcquire + e.getMessage());
                         }
-                        sem.release();
-                    } catch (InterruptedException e) {
-                        System.err.println(errSemAcquire + e.getMessage());
                     }
                 }
             }
-            System.out.println(out);
-            System.out.flush();
         }
     }
 }

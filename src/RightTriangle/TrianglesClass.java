@@ -6,9 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class TrianglesClass extends TrianglesBasic {
+public class TrianglesClass {
 
     private static final String errParams = "Usage: <filename> <thread count>";
+    private static final String errFNF = "file not found ";
     private static final String errPoints = "we got problems";
 
     protected List<Point> points = new ArrayList<>();
@@ -49,10 +50,9 @@ public class TrianglesClass extends TrianglesBasic {
         int totalRight = 0;
 
         for(int i = 0; i < points.size()-2; i++) {
-            for(int j = i+1; j < points.size()-1; j++) {
-                for(int k = j+1; k < points.size(); k++) {
+            for(int j = i+1; j < points.size(); j++) {
+                for(int k = j; k < points.size(); k++) {
                     if(rightCheck(points.get(i), points.get(j), points.get(k))) {
-//                        System.out.println(points.get(i).toString() + points.get(j).toString() + points.get(k).toString());
                         totalRight++;
                     }
                 }

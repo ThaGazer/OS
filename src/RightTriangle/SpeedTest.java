@@ -80,14 +80,14 @@ public class SpeedTest {
     }
 
     private static void fillAFile(String fileName) throws IOException {
-        int pointCount = 5;
+        int pointCount = 5000;
         FileWriter fileWriter = new FileWriter(new File(fileName));
         Random rnd = new Random(System.nanoTime());
         Set<Pair<Integer, Integer>> pointSet = new HashSet<>();
 
         fileWriter.write(pointCount + "\n");
         while(pointSet.size() != pointCount) {
-            pointSet.add(new Pair<>(rnd.nextInt(), rnd.nextInt(10)));
+            pointSet.add(new Pair<>(rnd.nextInt(1000), rnd.nextInt(1000)));
         }
 
         for(Pair p : pointSet) {
