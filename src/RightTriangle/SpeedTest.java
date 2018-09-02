@@ -19,11 +19,11 @@ public class SpeedTest {
 
     public static void main(String[] args) throws IOException {
         handleCmdLine(args);
-//        fillAFile(fileName);
+        fillAFile(fileName);
 
         StringBuilder out = new StringBuilder();
-        out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
-        out.append(handleOutput(TrianglesClass.class.getSimpleName(), runMain(TrianglesClass.class, new String[]{args[1]})));
+//        out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
+//        out.append(handleOutput(TrianglesClass.class.getSimpleName(), runMain(TrianglesClass.class, new String[]{args[1]})));
         out.append(handleOutput(TrianglesThreaded.class.getSimpleName(), runMain(TrianglesThreaded.class, new String[]{args[1], args[2]})));
 
         System.out.println("\n" + out);
@@ -87,7 +87,7 @@ public class SpeedTest {
 
         fileWriter.write(pointCount + "\n");
         while(pointSet.size() != pointCount) {
-            pointSet.add(new Pair<>(rnd.nextInt(10), rnd.nextInt(10)));
+            pointSet.add(new Pair<>(rnd.nextInt(), rnd.nextInt(10)));
         }
 
         for(Pair p : pointSet) {

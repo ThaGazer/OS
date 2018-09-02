@@ -115,7 +115,7 @@ public class Triangle {
         }
 
         Triangle t = (Triangle)obj;
-        return has(t.getA()) && has(t.getB()) && has(t.getC());
+        return has(t.getA()) && has(t.getB()) && has(t.getC()) && t.has(getA()) && t.has(getB()) && t.has(getC());
     }
 
     public String toString() {

@@ -44,7 +44,11 @@ public class Point {
 
     @Override
     public int hashCode() {
-        return Integer.hashCode(getX()) + Integer.hashCode(getY());
+        int prime = 31;
+        int res = 1;
+        res += prime * res + Integer.hashCode(getX());
+        res += prime * res + Integer.hashCode(getY());
+        return res;
     }
 
     @Override

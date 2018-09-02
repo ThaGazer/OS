@@ -12,6 +12,7 @@ public class TrianglesBasic {
 
     private static List<Integer> pointsX;
     private static List<Integer> pointsY;
+    private static Set<Triangle> dups = new HashSet<>();
     private static Integer totalPnts;
 
     public static void main(String[] args) throws Exception {
@@ -58,6 +59,8 @@ public class TrianglesBasic {
                 for(int k = 0; k < totalPnts; k++) {
                     int x1 = pointsX.get(i),x2 = pointsX.get(j),x3 = pointsX.get(k),
                             y1 = pointsY.get(i),y2 = pointsY.get(j),y3 = pointsY.get(k);
+
+                    findDup(x1,y1,x2,y2,x3,y3);
 
                     if(!(x1 == x2 && x1 == x3 || y1 == y2 && y1 == y3)) {
                         if(!(x1 == x2 && y1 == y2 || x1 == x3 && y1 == y3 || x2 == x3 && y2 == y3)) {
@@ -137,5 +140,17 @@ public class TrianglesBasic {
             }
         }
         return false;
+    }
+
+    private static void findDup(int x1, int y1, int x2, int y2, int x3, int y3) {
+        System.out.print("found triangle: (" + x1 + "," + y1 + ")(" + x2 + "," + y2 + ")(" + x3 + "," + y3 + ")");
+
+        Triangle tri = new Triangle(new Point(x1,y1), new Point(x2,y2), new Point(x3,y3));
+        if(dups.contains(tri)) {
+            System.out.println(" <-dup");
+        } else {
+            dups.add(tri);
+            System.out.println();
+        }
     }
 }

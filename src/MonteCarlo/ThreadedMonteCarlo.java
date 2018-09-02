@@ -69,7 +69,7 @@ public class ThreadedMonteCarlo {
             }
         }
 
-        double pi = 4 * (totPntIn/totPnts);
+        double pi = 4 * ((double)totPntIn/totPnts);
         System.out.println("pi is equal to: " + pi);
     }
 

@@ -26,7 +26,7 @@ public class TrianglesClass extends TrianglesBasic {
 
     }
 
-    @Override
+
     protected void readPoints(String filename) throws Exception {
         try {
             Scanner scn = new Scanner(new File(filename));
@@ -45,7 +45,6 @@ public class TrianglesClass extends TrianglesBasic {
         }
     }
 
-    @Override
     protected int findTriangles() {
         int totalRight = 0;
 
