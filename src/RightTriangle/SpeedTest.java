@@ -12,14 +12,14 @@ public class SpeedTest {
 
     private static final String errParams = "usage: <number of test> <fileName> <nProcs>";
     private static final String errTriangleRun = "something happened when running the program: ";
-//    private static final String errFile = "could not locate file: ";
+    private static final String errFile = "could not locate file: ";
 
     private static int loopCount;
     private static String fileName;
 
     public static void main(String[] args) throws IOException {
         handleCmdLine(args);
-        fillAFile(fileName);
+//        fillAFile(fileName);
 
         StringBuilder out = new StringBuilder();
         out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
@@ -80,9 +80,9 @@ public class SpeedTest {
     }
 
     private static void fillAFile(String fileName) throws IOException {
-        int pointCount = 50;
+        int pointCount = 5;
         FileWriter fileWriter = new FileWriter(new File(fileName));
-        Random rnd = new Random(System.currentTimeMillis());
+        Random rnd = new Random(System.nanoTime());
         Set<Pair<Integer, Integer>> pointSet = new HashSet<>();
 
         fileWriter.write(pointCount + "\n");

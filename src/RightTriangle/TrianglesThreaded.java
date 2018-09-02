@@ -1,7 +1,7 @@
 package RightTriangle;
 
 import java.util.*;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
 
 public class TrianglesThreaded extends TrianglesClass {
     private static final String errParams = "Usage: <filename> <nPros>";
@@ -39,24 +39,19 @@ public class TrianglesThreaded extends TrianglesClass {
     }
 
     private void findThreadTriangles() {
-        List<Thread> threads = new ArrayList<>();
+        ExecutorService pool = Executors.newFixedThreadPool(nprocs);
 
         //need to fix this logic for odd divisions
         int threadAmount = points.size() / nprocs;
 
         for(int i = 0; i < nprocs; i++) {
-            Thread t = new Thread(new RightTriangleFinder(points.subList(i*threadAmount, (i+1)*threadAmount)));
-            t.start();
-            threads.add(t);
+            List<Point> tri = points.subList(i*threadAmount, (i+1)*threadAmount);
+            pool.execute(new RightTriangleFinder(tri));
         }
 
-        for(Thread t : threads) {
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        pool.shutdown();
+
+        while(!pool.isTerminated()) {}
     }
 
     private class RightTriangleFinder implements Runnable {
@@ -69,23 +64,27 @@ public class TrianglesThreaded extends TrianglesClass {
 
         @Override
         public void run() {
+//            String out = "";
             for(Point p : pointList) {
-                for(int i = 0; i < points.size(); i++) {
-                    for(int j = i; j < points.size(); j++) {
-                        Triangle t = new Triangle(p, points.get(i), points.get(j));
+                for(int i = 0; i < points.size()-1; i++) {
+                    Triangle t = new Triangle(p, points.get(i), points.get(i+1));
+//                    out += (Thread.currentThread().getName() + " found triangle: " + t + "\n");
+                    try {
+                        sem.acquire();
                         if(!checkTriangles.contains(t) && t.isRight()) {
-                            try {
-                                sem.acquire();
                                 totalRightTriangles++;
+//                                out += "^ right triangle\n";
                                 checkTriangles.add(t);
                                 sem.release();
-                            } catch (InterruptedException e) {
-                                System.err.println(errSemAcquire + e.getMessage());
-                            }
                         }
+                        sem.release();
+                    } catch (InterruptedException e) {
+                        System.err.println(errSemAcquire + e.getMessage());
                     }
                 }
             }
+            /*System.out.println(out);
+            System.out.flush();*/
         }
     }
 }

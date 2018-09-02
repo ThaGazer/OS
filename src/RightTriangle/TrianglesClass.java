@@ -53,6 +53,7 @@ public class TrianglesClass extends TrianglesBasic {
             for(int j = i+1; j < points.size()-1; j++) {
                 for(int k = j+1; k < points.size(); k++) {
                     if(rightCheck(points.get(i), points.get(j), points.get(k))) {
+//                        System.out.println(points.get(i).toString() + points.get(j).toString() + points.get(k).toString());
                         totalRight++;
                     }
                 }
@@ -62,7 +63,7 @@ public class TrianglesClass extends TrianglesBasic {
     }
 
     private boolean rightCheck(Point p1, Point p2, Point p3) {
-        if(p1.isZeroSlope(p2, p3)) {
+        if(!p1.isZeroSlope(p2, p3)) {
             int a,b,c, temp;
             c = p1.distance(p2);
 
