@@ -62,14 +62,14 @@ public class TrianglesThreaded extends TrianglesClass {
     private void findThreadTriangles() {
         ExecutorService pool = Executors.newFixedThreadPool(nprocs);
 
-        //need to fix this logic for odd divisions
-        int amountPer = numPoints / nprocs;
+        /*int amountPer = numPoints / nprocs;
         int remainder = numPoints % nprocs;
+        int beg = 0, end = amountPer;*/
 
-        int beg = 0, end = amountPer;
         for(int i = 0; i < nprocs; i++) {
-            pool.execute(new RightTriangleFinder(points.subList(beg, end), end));
-            beg += amountPer;
+            pool.execute(new RightTriangleFinder(0,0,0,0));
+
+            /*beg += amountPer;
             end += amountPer;
 
             if(remainder > 0 && nprocs <= numPoints) {
@@ -80,7 +80,7 @@ public class TrianglesThreaded extends TrianglesClass {
                 beg = end;
                 end++;
                 remainder--;
-            }
+            }*/
         }
 
         pool.shutdown();
@@ -90,26 +90,26 @@ public class TrianglesThreaded extends TrianglesClass {
 
     private class RightTriangleFinder implements Runnable {
 
-        int workLoad;
-        Point startPoint;
+        int i,j,k,workLoad;
 
-        RightTriangleFinder(Point pIn, int amount) {
-            startPoint = pIn;
+        RightTriangleFinder(int i, int j, int k, int amount) {
             workLoad = amount;
+            this.i = i;
+            this.j = j;
+            this.k = k;
         }
 
         @Override
         public void run() {
-            for(int i = points.indexOf(startPoint); i < points.size(); i++) {
-                for(int j = i+1; j < points.size(); j++) {
-                    for(int k = i; k < points.size(); k++) {
+            for(int i = this.i; i < points.size(); i++) {
+                for (int j = this.j; j < points.size(); j++) {
+                    for(int k = this.k; k < points.size(); k++) {
                         Triangle t = new Triangle(points.get(i), points.get(j), points.get(k));
                         try {
                             sem.acquire();
                             if (!checkTriangles.contains(t) && t.isRight()) {
                                 totalRightTriangles++;
                                 checkTriangles.add(t);
-                                sem.release();
                             }
                             sem.release();
                         } catch (InterruptedException e) {
