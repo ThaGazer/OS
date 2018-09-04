@@ -32,7 +32,12 @@ public class TrianglesThreaded extends TrianglesClass {
         t.readPoints(args[0]);
         t.nprocs = Integer.parseInt(args[1]);
 
-        System.out.println(t.findTriangles());
+        if(t.nprocs <= t.numPoints) {
+            System.out.println(t.findTriangles());
+
+        } else {
+            System.err.println("to many processes");
+        }
     }
 
     @Override
@@ -62,25 +67,20 @@ public class TrianglesThreaded extends TrianglesClass {
     private void findThreadTriangles() {
         ExecutorService pool = Executors.newFixedThreadPool(nprocs);
 
-        /*int amountPer = numPoints / nprocs;
+        int amountPer = numPoints / nprocs;
         int remainder = numPoints % nprocs;
-        int beg = 0, end = amountPer;*/
+        int beg = 0, end = amountPer;
 
         for(int i = 0; i < nprocs; i++) {
-            pool.execute(new RightTriangleFinder(0,0,0,0));
+            pool.execute(new RightTriangleFinder(points.subList(beg,end)));
 
-            /*beg += amountPer;
+            beg += amountPer;
             end += amountPer;
 
-            if(remainder > 0 && nprocs <= numPoints) {
+            if(remainder > 0) {
                 end++;
                 remainder--;
             }
-            if(remainder > 0 && nprocs > numPoints){
-                beg = end;
-                end++;
-                remainder--;
-            }*/
         }
 
         pool.shutdown();
@@ -90,21 +90,20 @@ public class TrianglesThreaded extends TrianglesClass {
 
     private class RightTriangleFinder implements Runnable {
 
-        int i,j,k,workLoad;
+        List<Point> pointList;
 
-        RightTriangleFinder(int i, int j, int k, int amount) {
-            workLoad = amount;
-            this.i = i;
-            this.j = j;
-            this.k = k;
+        RightTriangleFinder(List<Point> pIn) {
+            pointList = pIn;
         }
 
         @Override
         public void run() {
-            for(int i = this.i; i < points.size(); i++) {
-                for (int j = this.j; j < points.size(); j++) {
-                    for(int k = this.k; k < points.size(); k++) {
-                        Triangle t = new Triangle(points.get(i), points.get(j), points.get(k));
+            //String out = "";
+            for(Point p : pointList) {
+                for (int j = points.indexOf(p)+1; j < points.size(); j++) {
+                    for(int k = j; k < points.size(); k++) {
+                        Triangle t = new Triangle(p, points.get(j), points.get(k));
+                        //out += Thread.currentThread().getName() + " found: " + t + "\n";
                         try {
                             sem.acquire();
                             if (!checkTriangles.contains(t) && t.isRight()) {
@@ -118,6 +117,7 @@ public class TrianglesThreaded extends TrianglesClass {
                     }
                 }
             }
+            //System.out.println(out + "\n");
         }
     }
 }
