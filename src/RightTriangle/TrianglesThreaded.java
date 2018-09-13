@@ -98,12 +98,10 @@ public class TrianglesThreaded extends TrianglesClass {
 
         @Override
         public void run() {
-            //String out = "";
             for(Point p : pointList) {
                 for (int j = points.indexOf(p)+1; j < points.size(); j++) {
-                    for(int k = j; k < points.size(); k++) {
+                    for(int k = j+1; k < points.size(); k++) {
                         Triangle t = new Triangle(p, points.get(j), points.get(k));
-                        //out += Thread.currentThread().getName() + " found: " + t + "\n";
                         try {
                             sem.acquire();
                             if (!checkTriangles.contains(t) && t.isRight()) {
@@ -117,7 +115,6 @@ public class TrianglesThreaded extends TrianglesClass {
                     }
                 }
             }
-            //System.out.println(out + "\n");
         }
     }
 }
