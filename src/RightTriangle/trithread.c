@@ -65,15 +65,15 @@ void max(int* x, int* y) {
  */
 int distanceCheck(Triangle t) {
   int a,b,c;
-  c = ((t.p1.x - t.p2.x)*(t.p1.x - t.p2.x)) +
-	  ((t.p1.y - t.p2.y)*(t.p1.y - t.p2.y));
+  c = abs(((t.p1.x - t.p2.x)*(t.p1.x - t.p2.x)) +
+	  ((t.p1.y - t.p2.y)*(t.p1.y - t.p2.y)));
 
-  a = ((t.p1.x - t.p3.x)*(t.p1.x - t.p3.x)) +
-	  ((t.p1.y - t.p3.y)*(t.p1.y - t.p3.y));
+  a = abs(((t.p1.x - t.p3.x)*(t.p1.x - t.p3.x)) +
+	  ((t.p1.y - t.p3.y)*(t.p1.y - t.p3.y)));
   max(&c, &a);
 
-  b = ((t.p2.x - t.p3.x)*(t.p2.x - t.p3.x)) +
-	  ((t.p2.y - t.p3.y)*(t.p2.y - t.p3.y));
+  b = abs(((t.p2.x - t.p3.x)*(t.p2.x - t.p3.x)) +
+	  ((t.p2.y - t.p3.y)*(t.p2.y - t.p3.y)));
   max(&c, &b);
 
   return (a+b) == c;
@@ -170,7 +170,7 @@ void readf(int desc, void* buff, size_t size) {
  * main function for threads to run
  */
 static void* findTriangle(void* parameters) {
-	Params* param = (Params*)parameters;
+  Params* param = (Params*)parameters;
 
   for(int j = param->start; j < param->stop; j++) {
     for(int k = j+1; k < param->totalPoints; k++) {
@@ -195,7 +195,7 @@ static void* findTriangle(void* parameters) {
       }
     }
   }
-	return NULL;
+  return NULL;
 }
 
 int main(int argc, char** argv) {
@@ -224,6 +224,10 @@ int main(int argc, char** argv) {
   //reads number of points in file
   int totalPoints = 0;
   fscanf(fileId, "%d", &totalPoints);
+  if(totalPoints == 0) {
+    fprintf(stderr, "incorrect file formatting: lead number is bad");
+    exit(1);
+  }
   fgetc(fileId);
 
   //reads and stores all the points in the file
@@ -232,7 +236,7 @@ int main(int argc, char** argv) {
   for(int i = 0; i < totalPoints; i++) {
 
     if(fscanf(fileId, "%d %d", &xCoord, &yCoord) == EOF) {
-      perror("incorrect file formatting\n");
+      fprintf(stderr, "incorrect file formatting\n");
       exit(1);
     }
 
@@ -248,7 +252,7 @@ int main(int argc, char** argv) {
 
   //nprocs bounds check
   if(nprocs > totalPoints) {
-    perror("to many proccesses to be spawned");
+    fprintf(stderr, "to many proccesses to be spawned\n");
     exit(1);
   }
 
@@ -259,42 +263,42 @@ int main(int argc, char** argv) {
   int workLoad = totalPoints / nprocs;
   int remainder = totalPoints % nprocs;
   int beg = 0, end = workLoad;
-	Params procParams[nprocs];
+  Params procParams[nprocs];
 
   //creates child processes
   for(int i = 0; i < nprocs; i++) {
     //set thread parameters
-		procParams[i].start = beg;
-		procParams[i].stop = end;
-		procParams[i].pointList = pointList;
-		procParams[i].totalPoints = totalPoints;
-		procParams[i].foundTriangles = foundTriangles;
-		procParams[i].ftLoc = &ftLoc;
-		procParams[i].rightTriangles = &totalRight;
-		procParams[i].lock = &lock;
+    procParams[i].start = beg;
+    procParams[i].stop = end;
+    procParams[i].pointList = pointList;
+    procParams[i].totalPoints = totalPoints;
+    procParams[i].foundTriangles = foundTriangles;
+    procParams[i].ftLoc = &ftLoc;
+    procParams[i].rightTriangles = &totalRight;
+    procParams[i].lock = &lock;
 
-		//replace with pthread_init
+    //replace with pthread_init
     pthread_create(&procParams[i].tid, NULL, *findTriangle, &procParams[i]);
 
     beg += workLoad;
     end += workLoad;
 
-		if(remainder > 0) {
+    if(remainder > 0) {
       end++;
       remainder--;
     }
   }
 
-	//replace with pthread_join
-	for(int i = 0; i < nprocs; i++) {
+  //replace with pthread_join
+  for(int i = 0; i < nprocs; i++) {
     if(pthread_join(procParams[i].tid, NULL)) {
       fprintf(stderr, "Error joing thread");
-			exit(1);
-		}
-	}
+      exit(1);
+    }
+  }
 
   //the sum of all right triangles found
-	printf("%d\n", totalRight);
+  printf("%d\n", totalRight);
 
   //free file mem
   free(pointList);

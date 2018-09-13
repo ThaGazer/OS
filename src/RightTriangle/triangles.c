@@ -52,15 +52,15 @@ void max(int* x, int* y) {
  */
 int distanceCheck(Triangle t) {
   int a,b,c;
-  c = ((t.p1.x - t.p2.x)*(t.p1.x - t.p2.x)) +
-	  ((t.p1.y - t.p2.y)*(t.p1.y - t.p2.y));
+  c = abs(((t.p1.x - t.p2.x)*(t.p1.x - t.p2.x)) +
+	  ((t.p1.y - t.p2.y)*(t.p1.y - t.p2.y)));
 
-  a = ((t.p1.x - t.p3.x)*(t.p1.x - t.p3.x)) +
-	  ((t.p1.y - t.p3.y)*(t.p1.y - t.p3.y));
+  a = abs(((t.p1.x - t.p3.x)*(t.p1.x - t.p3.x)) +
+	  ((t.p1.y - t.p3.y)*(t.p1.y - t.p3.y)));
   max(&c, &a);
 
-  b = ((t.p2.x - t.p3.x)*(t.p2.x - t.p3.x)) +
-	  ((t.p2.y - t.p3.y)*(t.p2.y - t.p3.y));
+  b = abs(((t.p2.x - t.p3.x)*(t.p2.x - t.p3.x)) +
+	  ((t.p2.y - t.p3.y)*(t.p2.y - t.p3.y)));
   max(&c, &b);
 
   return (a+b) == c;
@@ -92,7 +92,7 @@ int isRight(Triangle t) {
   if(isTriangle(t)) {
     return distanceCheck(t);
   } else {
-    return -1;
+    return 0;
   }
 }
 
@@ -141,7 +141,7 @@ void readf(int desc, void* buff, size_t size) {
   ssize_t rcvd;
 
   while(count < size) {
-    rcvd = read(desc, ((char*) buf) + count, size-count);
+    rcvd = read(desc, ((char*) buff) + count, size-count);
 
     if(rcvd < 0) {
       perror("read() failed");
@@ -182,6 +182,10 @@ int main(int argc, char** argv) {
 
   //reads number of points in file
   fscanf(fileId, "%d", &totalPoints);
+  if(totalPoints == 0) {
+    fprintf(stderr, "incorrect file formatting: lead number is bad");
+    exit(1);
+  }
   fgetc(fileId);
 
   //reads and stores all the points in the file
@@ -190,7 +194,7 @@ int main(int argc, char** argv) {
   for(int i = 0; i < totalPoints; i++) {
 
     if(fscanf(fileId, "%d %d", &xCoord, &yCoord) == EOF) {
-      perror("incorrect file formatting\n");
+      fprintf(stderr, "incorrect file formatting\n");
       exit(1);
     }
     pointList[i].x = xCoord;
@@ -206,7 +210,7 @@ int main(int argc, char** argv) {
 
   //nprocs bounds check
   if(nprocs > totalPoints) {
-    perror("to many proccesses to be spawned");
+    fprintf(stderr, "to many proccesses to be spawned\n");
     exit(1);
   }
 
@@ -238,19 +242,18 @@ int main(int argc, char** argv) {
 
       int beg, end;
       int rightTri = 0;
-      read(fd[i][0], &beg, sizeof(int));
-      read(fd[i][0], &end, sizeof(int));
+      readf(fd[i][0], &beg, sizeof(int));
+      readf(fd[i][0], &end, sizeof(int));
 
       for(int j = beg; j < end; j++) {
         for(int k = j+1; k < totalPoints; k++) {
-          for(int l = k; l < totalPoints; l++) {
+          for(int l = k+1; l < totalPoints; l++) {
             Triangle t;
             t.p1 = pointList[j];
             t.p2 = pointList[k];
             t.p3 = pointList[l];
-
             //add locks
-	        sem_wait(&lock);
+            sem_wait(&lock);
             if(!contains(t, foundTriangles)) {
               sem_post(&lock);
               if(isRight(t)) {
@@ -290,8 +293,7 @@ int main(int argc, char** argv) {
   int sum = 0;
   for(int i = 0; i < nprocs; i++) {
     int pntIn;
-    int byteRead = 0;
-    read(fd[i+nprocs][0], &pntIn, sizeof(int));
+    readf(fd[i+nprocs][0], &pntIn, sizeof(int));
     sum += pntIn;
   }
   printf("%d\n", sum);
@@ -305,7 +307,7 @@ int main(int argc, char** argv) {
     for(int j = 0; j < 2; j++) {
       if((close(fd[i][j])) == -1) {
         perror("could not close a pipe");
-	    exit(1);
+	      exit(1);
       }
     }
   }
