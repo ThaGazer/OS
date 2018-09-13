@@ -1,6 +1,6 @@
 /*
  *Author: Justin Ritter
- *File: triangles.c
+ *File: trithread.c
  *
  *Description: find all right triangles for a set of x and y coordinates
  */
@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <semaphore.h>
+#include <pthread.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -27,6 +28,18 @@ typedef struct point {
 typedef struct triangle {
   Point p1, p2, p3;
 } Triangle;
+
+typedef struct parameters {
+	pthread_t tid;
+  int start;
+  int stop;
+	Point* pointList;
+	int totalPoints;
+	Triangle* foundTriangles;
+	int* ftLoc;
+	int* rightTriangles;
+	sem_t* lock;
+} Params;
 
 /*
  * checks if two points are equal to each other
@@ -92,7 +105,7 @@ int isRight(Triangle t) {
   if(isTriangle(t)) {
     return distanceCheck(t);
   } else {
-    return -1;
+    return 0;
   }
 }
 
@@ -141,7 +154,7 @@ void readf(int desc, void* buff, size_t size) {
   ssize_t rcvd;
 
   while(count < size) {
-    rcvd = read(desc, ((char*) buf) + count, size-count);
+    rcvd = read(desc, ((char*) buff) + count, size-count);
 
     if(rcvd < 0) {
       perror("read() failed");
@@ -151,6 +164,38 @@ void readf(int desc, void* buff, size_t size) {
     }
     count += (size_t)rcvd;
   }
+}
+
+/*
+ * main function for threads to run
+ */
+static void* findTriangle(void* parameters) {
+	Params* param = (Params*)parameters;
+
+  for(int j = param->start; j < param->stop; j++) {
+    for(int k = j+1; k < param->totalPoints; k++) {
+      for(int l = k+1; l < param->totalPoints; l++) {
+        Triangle t;
+        t.p1 = param->pointList[j];
+        t.p2 = param->pointList[k];
+        t.p3 = param->pointList[l];
+
+        //add locks
+        sem_wait(param->lock);
+        if(!contains(t, param->foundTriangles)) {
+          sem_post(param->lock);
+          if(isRight(t)) {
+            sem_wait(param->lock);
+            *param->rightTriangles += 1;
+            param->foundTriangles[*param->ftLoc] = t;
+            *param->ftLoc += 1;
+            sem_post(param->lock);
+          }
+        }
+      }
+    }
+  }
+	return NULL;
 }
 
 int main(int argc, char** argv) {
@@ -163,17 +208,13 @@ int main(int argc, char** argv) {
 
   char* fname = argv[1];
   int nprocs = atoi(argv[2]);
-  int fd[nprocs*2][2];
-  int totalPoints = 0;
+  int totalRight = 0;
   sem_t lock;
 
   //init locks
   sem_init(&lock, 1,1);
 
-  //pids
-  pid_t pid;
-
-  //file checker
+  //reads from fname and stores points in pointList
   FILE* fileId;
   if(!(fileId = fopen(fname, "r"))) {
     perror("could not open file\n");
@@ -181,6 +222,7 @@ int main(int argc, char** argv) {
   }
 
   //reads number of points in file
+  int totalPoints = 0;
   fscanf(fileId, "%d", &totalPoints);
   fgetc(fileId);
 
@@ -193,6 +235,7 @@ int main(int argc, char** argv) {
       perror("incorrect file formatting\n");
       exit(1);
     }
+
     pointList[i].x = xCoord;
     pointList[i].y = yCoord;
   }
@@ -202,7 +245,6 @@ int main(int argc, char** argv) {
 
   //calculate the total number of triangle that can should be made
   int totalLoad = ((totalPoints * totalPoints * totalPoints) / 6) - (totalPoints / 6);
-
 
   //nprocs bounds check
   if(nprocs > totalPoints) {
@@ -214,101 +256,49 @@ int main(int argc, char** argv) {
   Triangle* foundTriangles = (Triangle*) malloc(totalLoad * sizeof(Triangle));
   int ftLoc = 0;
 
-  //create pipes
-  for(int i = 0; i < nprocs*2; i++) {
-    if((pipe(fd[i])) == -1) {
-      perror("pipe failed");
-      exit(1);
-    }
-  }
-
-	int workLoad = totalPoints / nprocs;
-	int remainder = totalPoints % nprocs;
-	int beg = 0, end = workLoad;
+  int workLoad = totalPoints / nprocs;
+  int remainder = totalPoints % nprocs;
+  int beg = 0, end = workLoad;
+	Params procParams[nprocs];
 
   //creates child processes
   for(int i = 0; i < nprocs; i++) {
-    if((pid = fork()) == -1) {
-      fprintf(stderr,"fork failed: %d\n", getpid());
-      exit(1);
-    }
+    //set thread parameters
+		procParams[i].start = beg;
+		procParams[i].stop = end;
+		procParams[i].pointList = pointList;
+		procParams[i].totalPoints = totalPoints;
+		procParams[i].foundTriangles = foundTriangles;
+		procParams[i].ftLoc = &ftLoc;
+		procParams[i].rightTriangles = &totalRight;
+		procParams[i].lock = &lock;
 
-    //in child process
-    if(pid == 0) {
+		//replace with pthread_init
+    pthread_create(&procParams[i].tid, NULL, *findTriangle, &procParams[i]);
 
-      int beg, end;
-      int rightTri = 0;
-      read(fd[i][0], &beg, sizeof(int));
-      read(fd[i][0], &end, sizeof(int));
+    beg += workLoad;
+    end += workLoad;
 
-      for(int j = beg; j < end; j++) {
-        for(int k = j+1; k < totalPoints; k++) {
-          for(int l = k; l < totalPoints; l++) {
-            Triangle t;
-            t.p1 = pointList[j];
-            t.p2 = pointList[k];
-            t.p3 = pointList[l];
-
-            //add locks
-	        sem_wait(&lock);
-            if(!contains(t, foundTriangles)) {
-              sem_post(&lock);
-              if(isRight(t)) {
-                sem_wait(&lock);
-                rightTri++;
-                foundTriangles[ftLoc] = t;
-                ftLoc++;
-                sem_post(&lock);
-              }
-            }
-          }
-        }
-      }
-      write(fd[i+nprocs][1], &rightTri, sizeof(int));
-      exit(1);
-    } else {
-      //write the beginning position
-      write(fd[i][1], &beg, sizeof(int));
-
-      //write the last position to read
-      write(fd[i][1], &end, sizeof(int));
-
-      beg += workLoad;
-      end += workLoad;
-
-      if(remainder > 0) {
-        end++;
-        remainder--;
-      }
+		if(remainder > 0) {
+      end++;
+      remainder--;
     }
   }
 
-	//waiting for children
-	wait(NULL);
+	//replace with pthread_join
+	for(int i = 0; i < nprocs; i++) {
+    if(pthread_join(procParams[i].tid, NULL)) {
+      fprintf(stderr, "Error joing thread");
+			exit(1);
+		}
+	}
 
-  //summing calculations from the children processes
-  int sum = 0;
-  for(int i = 0; i < nprocs; i++) {
-    int pntIn;
-    int byteRead = 0;
-    read(fd[i+nprocs][0], &pntIn, sizeof(int));
-    sum += pntIn;
-  }
-  printf("%d\n", sum);
+  //the sum of all right triangles found
+	printf("%d\n", totalRight);
 
   //free file mem
   free(pointList);
   free(foundTriangles);
-
-  //close pipe
-  for(int i = 0; i < nprocs*2; i++) {
-    for(int j = 0; j < 2; j++) {
-      if((close(fd[i][j])) == -1) {
-        perror("could not close a pipe");
-	    exit(1);
-      }
-    }
-  }
 
   return 0;
 }
