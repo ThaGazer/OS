@@ -60,7 +60,7 @@ public class TrianglesBasic {
                     int x1 = pointsX.get(i),x2 = pointsX.get(j),x3 = pointsX.get(k),
                             y1 = pointsY.get(i),y2 = pointsY.get(j),y3 = pointsY.get(k);
 
-                    //findDup(x1,y1,x2,y2,x3,y3);
+                    findDup(x1,y1,x2,y2,x3,y3);
 
                     if(!(x1 == x2 && x1 == x3 || y1 == y2 && y1 == y3)) {
                         if(!(x1 == x2 && y1 == y2 || x1 == x3 && y1 == y3 || x2 == x3 && y2 == y3)) {
@@ -87,6 +87,7 @@ public class TrianglesBasic {
                                 if (a + b == c) {
                                     numOfRightTri++;
 
+                                    System.out.println("^right");
                                     foundX.add(x1);
                                     foundX.add(x2);
                                     foundX.add(x3);

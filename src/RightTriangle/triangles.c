@@ -112,7 +112,6 @@ int main(int argc, char** argv) {
             Point p1 = pointList[i], p2 = pointList[j], p3 = pointList[k];
             if(contains(p1,p2,p3, foundTriangles) && isRight(p1,p2,p3)) {
             }
-
           }
         }
       }
