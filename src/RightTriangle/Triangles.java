@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class TrianglesThreaded extends TrianglesClass {
+public class Triangles extends TrianglesClass {
     //Error messages
     private static final String errParams = "Usage: <filename> <nPros>";
     private static final String errFNF = "file not found ";
@@ -23,7 +23,7 @@ public class TrianglesThreaded extends TrianglesClass {
     private Set<Triangle> checkTriangles = new HashSet<>();
 
     public static void main(String[] args) {
-        TrianglesThreaded t = new TrianglesThreaded();
+        Triangles t = new Triangles();
 
         //parameters checking
         if(args.length < 2) {

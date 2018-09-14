@@ -24,7 +24,7 @@ public class SpeedTest {
         StringBuilder out = new StringBuilder();
 //        out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
 //        out.append(handleOutput(TrianglesClass.class.getSimpleName(), runMain(TrianglesClass.class, new String[]{args[1]})));
-        out.append(handleOutput(TrianglesThreaded.class.getSimpleName(), runMain(TrianglesThreaded.class, new String[]{args[1], args[2]})));
+        out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1], args[2]})));
 
         System.out.println("\n" + out);
     }
@@ -80,14 +80,14 @@ public class SpeedTest {
     }
 
     private static void fillAFile(String fileName) throws IOException {
-        int pointCount = 1000;
+        int pointCount = 500;
         FileWriter fileWriter = new FileWriter(new File(fileName));
         Random rnd = new Random(System.nanoTime());
         Set<Pair<Integer, Integer>> pointSet = new HashSet<>();
 
         fileWriter.write(pointCount + "\n");
         while(pointSet.size() != pointCount) {
-            pointSet.add(new Pair<>(rnd.nextInt(100), rnd.nextInt(100)));
+            pointSet.add(new Pair<>(rnd.nextInt(1000), rnd.nextInt(1000)));
         }
 
         for(Pair p : pointSet) {
