@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
 
   //nprocs bounds check
   if(nprocs > totalPoints) {
-    fprintf(stderr, "to many proccesses to be spawned\n");
+    fprintf(stderr, "to many processes to be spawned\n");
     exit(1);
   }
 
@@ -226,9 +226,9 @@ int main(int argc, char** argv) {
     }
   }
 
-	int workLoad = totalPoints / nprocs;
-	int remainder = totalPoints % nprocs;
-	int beg = 0, end = workLoad;
+  int workLoad = totalPoints / nprocs;
+  int remainder = totalPoints % nprocs;
+  int beg = 0, end = workLoad;
 
   //creates child processes
   for(int i = 0; i < nprocs; i++) {
@@ -239,7 +239,6 @@ int main(int argc, char** argv) {
 
     //in child process
     if(pid == 0) {
-
       int beg, end;
       int rightTri = 0;
       readf(fd[i][0], &beg, sizeof(int));
@@ -286,8 +285,8 @@ int main(int argc, char** argv) {
     }
   }
 
-	//waiting for children
-	wait(NULL);
+  //waiting for children
+  wait(NULL);
 
   //summing calculations from the children processes
   int sum = 0;
@@ -307,7 +306,7 @@ int main(int argc, char** argv) {
     for(int j = 0; j < 2; j++) {
       if((close(fd[i][j])) == -1) {
         perror("could not close a pipe");
-	      exit(1);
+	    exit(1);
       }
     }
   }

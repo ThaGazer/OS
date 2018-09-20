@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
-public class Triangles extends TrianglesClass {
+public class Triangles {
     //Error messages
     private static final String errParams = "Usage: <filename> <nPros>";
     private static final String errFNF = "file not found ";
@@ -21,6 +21,8 @@ public class Triangles extends TrianglesClass {
     private Semaphore sem = new Semaphore(1);
 
     private Set<Triangle> checkTriangles = new HashSet<>();
+    private List<Point> points = new ArrayList<>();
+
 
     public static void main(String[] args) {
         Triangles t = new Triangles();
@@ -42,8 +44,7 @@ public class Triangles extends TrianglesClass {
      * reads points from a file
      * @param fileName file to read from
      */
-    @Override
-    protected void readPoints(String fileName) {
+    private void readPoints(String fileName) {
         try {
             //a read buffer
             BufferedReader reader = new BufferedReader(new FileReader(fileName));
@@ -92,7 +93,7 @@ public class Triangles extends TrianglesClass {
      * find the total number of right triangles in the set
      * @return total number of right triangles
      */
-    protected int findTriangles() {
+    private int findTriangles() {
         findThreadTriangles();
         return totalRightTriangles;
     }
@@ -104,21 +105,28 @@ public class Triangles extends TrianglesClass {
         //prevents excessive thread creation
         ExecutorService pool = Executors.newFixedThreadPool(nprocs);
 
-        int amountPer = numPoints / nprocs;
-        int remainder = numPoints % nprocs;
-        int beg = 0, end = amountPer;
+        long totalLoad = ((((long)points.size()*points.size()*points.size()))-
+                ((3L*points.size()*points.size()))+((2L*points.size())));
+        totalLoad = totalLoad/6L + (totalLoad%6L);
 
-        for(int i = 0; i < nprocs; i++) {
-            pool.execute(new RightTriangleFinder(points.subList(beg,end)));
+        long workLoad = totalLoad / nprocs;
+        long remainder = totalLoad % nprocs;
 
-            //increments starting position for next thread
-            beg += amountPer;
-            end += amountPer;
+        long workCount = 0, threadWork = workLoad;
+        for(int i = 0; i < points.size() && nprocs > 0; i++) {
+            for(int j = i+1; j < points.size() && nprocs > 0; j++) {
+                for(int k = j+1; k < points.size() && nprocs > 0; k++) {
+                    if((workCount%threadWork) == 0) {
+                        nprocs--;
 
-            //adds in any remainder of work to be done
-            if(remainder > 0) {
-                end++;
-                remainder--;
+                        if(nprocs == 0) {
+                            threadWork+=remainder;
+                        }
+
+                        pool.execute(new RightTriangleFinder(i,j,k,threadWork));
+                    }
+                    workCount++;
+                }
             }
         }
 
@@ -133,25 +141,49 @@ public class Triangles extends TrianglesClass {
      */
     private class RightTriangleFinder implements Runnable {
 
-        List<Point> pointList;
+        private int i,j,k;
+        private long amount;
 
-        RightTriangleFinder(List<Point> pIn) {
-            pointList = pIn;
+        RightTriangleFinder(int i, int j, int k, long workLoad) {
+            this.i = i;
+            this.j = j;
+            this.k = k;
+            amount = workLoad;
         }
 
         @Override
         public void run() {
-            for(Point p : pointList) {
-                for (int j = points.indexOf(p)+1; j < points.size(); j++) {
-                    for(int k = j+1; k < points.size(); k++) {
-                        Triangle t = new Triangle(p, points.get(j), points.get(k));
+            boolean start = true;
+            for(; i < points.size() && amount > 0; i++) {
+                if(!start) {
+                    j = i + 1;
+                }
+                for (; j < points.size() && amount > 0; j++) {
+                    if(!start) {
+                        k = j + 1;
+                    }
+                    for(; k < points.size() && amount > 0; k++) {
+                        if(start) {
+                            start = false;
+                        }
+                        amount--;
+
+                        //new triangle out points i,j,k
+                        Triangle t = new Triangle(points.get(i), points.get(j), points.get(k));
+
                         try {
                             sem.acquire();
-                            if (!checkTriangles.contains(t) && t.isRight()) {
-                                totalRightTriangles++;
-                                checkTriangles.add(t);
+                            if (!checkTriangles.contains(t)) {
+                                sem.release();
+                                if(t.isRight()) {
+                                    sem.acquire();
+
+                                    totalRightTriangles++;
+                                    checkTriangles.add(t);
+
+                                    sem.release();
+                                }
                             }
-                            sem.release();
                         } catch (InterruptedException e) {
                             System.err.println(errSemAcquire + e.getMessage());
                         }
