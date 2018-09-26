@@ -170,6 +170,7 @@ public class Triangles {
 
                         //new triangle out points i,j,k
                         Triangle t = new Triangle(points.get(i), points.get(j), points.get(k));
+                        System.out.println(t);
 
                         try {
                             sem.acquire();
