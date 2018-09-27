@@ -31,6 +31,7 @@ public class ThrillerTribute {
     CyclicBarrier wall = new CyclicBarrier(3);
     Semaphore mjLock = new Semaphore(1);
     Semaphore zombieLock = new Semaphore(2);
+    Semaphore finishLock = new Semaphore(1);
 
     /**
      * Start MJ and zombie-spawning threads
@@ -43,10 +44,10 @@ public class ThrillerTribute {
                 int i = 0; // MJ impersonator ID
                 while (true) {
                     new Thread(new MJ(i++)).start();
-                    try {
+/*                    try {
                         sleep(rndGen.nextInt(MJDELAY));
                     } catch (InterruptedException e) {
-                    }
+                    }*/
                 }
             }
         }.start();
@@ -58,10 +59,10 @@ public class ThrillerTribute {
                 int i = 0; // Zombie ID
                 while (true) {
                     new Thread(new Zombie(i++)).start();
-                    try {
+/*                    try {
                         sleep(rndGen.nextInt(ZOMBIEDELAY));
                     } catch (InterruptedException e) {
-                    }
+                    }*/
                 }
             }
         }.start();
@@ -171,17 +172,18 @@ public class ThrillerTribute {
          */
         public void addDancer(MJ mj) {
             try {
-                mjLock.acquire();
-                mjCt++;
-                // Test if too many MJs
-                if (mjCt > MAXMJS) {
-                    System.err.println("Too many Michaels on the floor");
-                    System.exit(1);
-                }
-                System.out.println(mj + " is ready to dance!");
+                if(mjLock.tryAcquire()) {
+                    mjCt++;
+                    // Test if too many MJs
+                    if(mjCt > MAXMJS) {
+                        System.err.println("Too many Michaels on the floor");
+                        System.exit(1);
+                    }
+                    System.out.println(mj + " is ready to dance!");
 
-                finish();
-                wall.await();
+                    finish();
+                    wall.await();
+                }
             } catch (InterruptedException | BrokenBarrierException e) {
                 error(e.getMessage());
             }
@@ -195,17 +197,18 @@ public class ThrillerTribute {
          */
         public void addDancer(Zombie z) {
             try {
-                zombieLock.acquire();
-                zombieCt++;
-                // Test if too many zombies
-                if (zombieCt > MAXZOMBIES) {
-                    System.err.println("Too many Zombies on the floor");
-                    System.exit(1);
-                }
-                System.out.println(z + " is ready to dance!");
+                if(zombieLock.tryAcquire()) {
+                    zombieCt++;
+                    // Test if too many zombies
+                    if(zombieCt > MAXZOMBIES) {
+                        System.err.println("Too many Zombies on the floor");
+                        System.exit(1);
+                    }
+                    System.out.println(z + " is ready to dance!");
 
-                finish();
-                wall.await();
+                    finish();
+                    wall.await();
+                }
             } catch (InterruptedException | BrokenBarrierException e) {
              error(e.getMessage());
             }
@@ -213,11 +216,14 @@ public class ThrillerTribute {
 
         // Reset count if last dancer
         protected void finish() {
-            if (mjCt == 1 && zombieCt == 2) {
-                System.out.println("dancing");
-                mjCt = zombieCt = 0;
-                mjLock.release();
-                zombieLock.release(2);
+            if(finishLock.tryAcquire()) {
+                if(mjCt == 1 && zombieCt == 2) {
+                    mjCt = zombieCt = 0;
+                    mjLock.release();
+                    zombieLock.release(2);
+                    finishLock.release();
+                }
+                finishLock.release();
             }
         }
     }
