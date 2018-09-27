@@ -22,8 +22,6 @@ public class SemaFortune {
 
     // Total number of patrons
     private int patronCt = 0;
-    //Balk rate
-    private int balkRate = 0;
     // Number of patrons receiving their fortune (should be a max of 1)
     private AtomicInteger ct = new AtomicInteger(0);
     // Generator for random events
@@ -32,6 +30,7 @@ public class SemaFortune {
     /*
      * You may add variables here
      */
+    private int balkRate = 0; /*number of patrons turned away*/
     private Semaphore crystalBallLock = new Semaphore(0); /*only allow one patron access to the crystal ball*/
     private Semaphore fortuneLock = new Semaphore(1); /*awaken teller*/
     private Semaphore lock = new Semaphore(0); /*data mutex lock*/
@@ -94,10 +93,10 @@ public class SemaFortune {
             if (c < -1 || c > 1) {
                 error("Outta phase " + c);
             }
-            try { // Telling
+/*            try { // Telling
                 Thread.sleep(rndGen.nextInt(MAXFORTUNETELLINGTIME));
             } catch (InterruptedException e) {
-            }
+            }*/
         }
     }
 

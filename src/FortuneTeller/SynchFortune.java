@@ -1,6 +1,6 @@
 /*
  * Author: Justin Ritter
- * File: null.java
+ * File: SemaFortune.java
  * Date: 9/26/2018
  */
 package FortuneTeller;
@@ -29,19 +29,19 @@ public class SynchFortune {
     /*
      * You may add variables here
      */
-    private int bulkRate = 0; /*how many patrons get turned away*/
-    private final Object crystalBallLock = new Object();
-    private final Object fortuneLock = new Object();
+    private int bulkRate = 0; /*number of patrons turned away*/
+    private int crystalBall = 1; /*only allow one patron access to the crystal ball*/
+    private final Object objectLock = new Object(); /*lock around a unified object*/
 
     public void go() {
         Teller teller = new Teller();
         new Thread(teller, "Teller").start();
 
-        for (int i = 0; i < Integer.MAX_VALUE; i++) {
+        for(int i = 0; i < Integer.MAX_VALUE; i++) {
             new Thread(new Patron("Patron " + i++)).start();
             try {
                 Thread.sleep(rndGen.nextInt(MAXPATRONINTERARRIVALTIME));
-            } catch (InterruptedException e) {
+            } catch(InterruptedException e) {
             }
         }
     }
@@ -62,31 +62,38 @@ public class SynchFortune {
             /*
              * You may add code in this method; you may not delete code
              */
-            while (true) {
-                try {
-                    crystalBallLock.wait();
+            while(true) {
 
-                    tellFortune();
+                synchronized(objectLock) {
+                    while(patronCt < 1 && crystalBall >= 1) {
+                        try {
+                            objectLock.wait();
+                        } catch(InterruptedException e) {
+                            error(e.getMessage());
+                        }
+                    }
+                }
 
-                    notify();
-                } catch (InterruptedException e) {
-                    error(e.getMessage());
+                tellFortune();
+
+                synchronized(objectLock) {
+                    objectLock.notify();
                 }
             }
         }
 
         public void tellFortune() {
-            if (patronCt < 1) {
-                error("Fortune teller arrested on tax fraud for over reporting sessions (Telling fortune to nobody)");
+            if(patronCt < 1) {
+                error("Fortune teller arrested on tax fraud for overreporting sessions (Telling fortune to nobody)");
             }
             System.out.println("Fortune teller telling");
             int c = ct.incrementAndGet();
-            if (c < -1 || c > 1) {
+            if(c < -1 || c > 1) {
                 error("Outta phase " + c);
             }
             try { // Telling
                 Thread.sleep(rndGen.nextInt(MAXFORTUNETELLINGTIME));
-            } catch (InterruptedException e) {
+            } catch(InterruptedException e) {
             }
         }
     }
@@ -104,28 +111,34 @@ public class SynchFortune {
             /*
              * You may add code in this method; you may not delete code
              */
-            synchronized (this) {
-                if(patronCt >= MAXPARLORCAPACITY) {
-                    handleShopFull();
-                }
-                patronCt++;
-                if (patronCt > MAXPARLORCAPACITY + 1) {
-                    error("Town unprepared for flooding after distracted fortune teller gives bad advice to weatherman (Too many patrons in parlor)");
-                }
-            }
-
             try {
-                fortuneLock.wait();
-                crystalBallLock.notify();
+                synchronized(objectLock) {
+                    if(patronCt < MAXPARLORCAPACITY) {
+                        patronCt++;
+                        if(patronCt > MAXPARLORCAPACITY + 1) {
+                            error("Town unprepared for flooding after distracted fortune teller gives bad advice to weatherman (Too many patrons in parlor)");
+                        }
 
-                wait();
-                getFortune();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+                        while(crystalBall < 1) {
+                            objectLock.wait();
+                        }
 
-            synchronized (this) {
-                patronCt--;
+                        crystalBall -= 1;
+                        objectLock.notify();
+
+                        objectLock.wait();
+
+                        getFortune();
+
+                        crystalBall++;
+
+                        patronCt--;
+                    } else {
+                        handleShopFull();
+                    }
+                }
+            } catch(InterruptedException e) {
+                error(e.getMessage());
             }
         }
 
@@ -134,10 +147,9 @@ public class SynchFortune {
             ct.decrementAndGet();
         }
 
-        public synchronized void handleShopFull() {
+        public void handleShopFull() {
             // Could add counter here to compute balk rate
             bulkRate++;
-            Thread.currentThread().interrupt();
         }
     }
 }
