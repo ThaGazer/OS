@@ -29,6 +29,9 @@ public class SynchFortune {
     /*
      * You may add variables here
      */
+    private int bulkRate = 0; /*how many patrons get turned away*/
+    private final Object crystalBallLock = new Object();
+    private final Object fortuneLock = new Object();
 
     public void go() {
         Teller teller = new Teller();
@@ -60,8 +63,14 @@ public class SynchFortune {
              * You may add code in this method; you may not delete code
              */
             while (true) {
-                synchronized (this) {
+                try {
+                    crystalBallLock.wait();
+
                     tellFortune();
+
+                    notify();
+                } catch (InterruptedException e) {
+                    error(e.getMessage());
                 }
             }
         }
@@ -96,13 +105,24 @@ public class SynchFortune {
              * You may add code in this method; you may not delete code
              */
             synchronized (this) {
+                if(patronCt >= MAXPARLORCAPACITY) {
+                    handleShopFull();
+                }
                 patronCt++;
                 if (patronCt > MAXPARLORCAPACITY + 1) {
                     error("Town unprepared for flooding after distracted fortune teller gives bad advice to weatherman (Too many patrons in parlor)");
                 }
             }
 
-            getFortune();
+            try {
+                fortuneLock.wait();
+                crystalBallLock.notify();
+
+                wait();
+                getFortune();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
             synchronized (this) {
                 patronCt--;
@@ -114,8 +134,10 @@ public class SynchFortune {
             ct.decrementAndGet();
         }
 
-        public void handleShopFull() {
+        public synchronized void handleShopFull() {
             // Could add counter here to compute balk rate
+            bulkRate++;
+            Thread.currentThread().interrupt();
         }
     }
 }

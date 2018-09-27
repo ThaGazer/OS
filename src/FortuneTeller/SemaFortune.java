@@ -32,10 +32,10 @@ public class SemaFortune {
     /*
      * You may add variables here
      */
-    private Semaphore crystalBallLock = new Semaphore(0);
-    private Semaphore fortuneLock = new Semaphore(1);
-    private Semaphore lock = new Semaphore(0);
-    private Semaphore patronLock = new Semaphore(MAXPARLORCAPACITY);
+    private Semaphore crystalBallLock = new Semaphore(0); /*only allow one patron access to the crystal ball*/
+    private Semaphore fortuneLock = new Semaphore(1); /*awaken teller*/
+    private Semaphore lock = new Semaphore(0); /*data mutex lock*/
+    private Semaphore patronLock = new Semaphore(MAXPARLORCAPACITY); /*only allow 4 patrons to sit in the parlor*/
 
     public void go() {
         Teller teller = new Teller();
@@ -77,7 +77,7 @@ public class SemaFortune {
                     //telling fortune
                     tellFortune();
 
-                    //tell other patrons that the crystal ball is open
+                    //tell tell the patron that their fortune is ready
                     lock.release();
                 }
             } catch (InterruptedException e) {
@@ -122,19 +122,22 @@ public class SemaFortune {
                         error("Town unprepared for flooding after distracted fortune teller gives bad advice to weatherman (Too many patrons in parlor)");
                     }
 
-                    //patron enters crystal ball
+                    //patron wants their fortune
                     fortuneLock.acquire();
                     //tell fortune teller that you are here
                     crystalBallLock.release();
+                    //allow another patron to enter parlor
+                    patronLock.release();
 
+                    //wait for fortune to finish
                     lock.acquire();
                     getFortune();
                     patronCt--;
 
-                    //leave parlor
-                    patronLock.release();
+                    //tell other patrons that the crystal ball is open
                     fortuneLock.release();
                 } else {
+                    //added bulk counter
                     handleShopFull();
                 }
             } catch (InterruptedException e) {
