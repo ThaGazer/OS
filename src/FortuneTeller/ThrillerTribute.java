@@ -1,6 +1,6 @@
 /*
  * Author: Justin Ritter
- * File: null.java
+ * File: ThrillerTribute.java
  * Date: 9/26/2018
  */
 package FortuneTeller;
