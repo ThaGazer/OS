@@ -66,9 +66,6 @@ public class SemaFortune {
              * You may add code in this method; you may not delete code
              */
             try {
-                //initializes lock to be locked on first run through
-
-
                 while (true) {
                     //wait for patron to show up
                     crystalBallLock.acquire();
@@ -93,10 +90,10 @@ public class SemaFortune {
             if (c < -1 || c > 1) {
                 error("Outta phase " + c);
             }
-/*            try { // Telling
+            try { // Telling
                 Thread.sleep(rndGen.nextInt(MAXFORTUNETELLINGTIME));
             } catch (InterruptedException e) {
-            }*/
+            }
         }
     }
 

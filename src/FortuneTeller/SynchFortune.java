@@ -31,7 +31,7 @@ public class SynchFortune {
      */
     private int bulkRate = 0; /*number of patrons turned away*/
     private int crystalBall = 1; /*only allow one patron access to the crystal ball*/
-    private final Object objectLock = new Object(); /*lock around a unified object*/
+    private final Object fortuneLock = new Object(); /*tell patron when fortune is ready*/
 
     public void go() {
         Teller teller = new Teller();
@@ -64,20 +64,22 @@ public class SynchFortune {
              */
             while(true) {
 
-                synchronized(objectLock) {
-                    while(patronCt < 1 && crystalBall >= 1) {
-                        try {
-                            objectLock.wait();
-                        } catch(InterruptedException e) {
-                            error(e.getMessage());
-                        }
+                synchronized(Teller.class) {
+                    try {
+                        //wait for patron to come to crystal ball
+                        Teller.class.wait();
+                    } catch(InterruptedException e) {
+                        error(e.getMessage());
                     }
+                    //tell them their fortune
+                    tellFortune();
                 }
 
-                tellFortune();
-
-                synchronized(objectLock) {
-                    objectLock.notify();
+                synchronized(fortuneLock) {
+                    //notify patron that their fortune is ready
+                    fortuneLock.notify();
+                    //allow someone else to the crystal ball
+                    crystalBall++;
                 }
             }
         }
@@ -112,30 +114,41 @@ public class SynchFortune {
              * You may add code in this method; you may not delete code
              */
             try {
-                synchronized(objectLock) {
-                    if(patronCt < MAXPARLORCAPACITY) {
+                if(patronCt < MAXPARLORCAPACITY) {
+                    synchronized(Patron.class) {
                         patronCt++;
                         if(patronCt > MAXPARLORCAPACITY + 1) {
                             error("Town unprepared for flooding after distracted fortune teller gives bad advice to weatherman (Too many patrons in parlor)");
                         }
+                    }
 
+                    synchronized(Patron.class) {
+                        //only one patron to crystal ball
                         while(crystalBall < 1) {
-                            objectLock.wait();
+                            Patron.class.wait();
                         }
-
                         crystalBall -= 1;
-                        objectLock.notify();
+                    }
 
-                        objectLock.wait();
+                    synchronized(Teller.class) {
+                        //awaken teller
+                        Teller.class.notify();
+                    }
 
+                    synchronized(fortuneLock) {
+                        //wait for fortune to be ready
+                        fortuneLock.wait();
                         getFortune();
 
-                        crystalBall++;
-
-                        patronCt--;
-                    } else {
-                        handleShopFull();
+                        synchronized(Patron.class) {
+                            //tell the next patron that the crystal ball is open
+                            Patron.class.notify();
+                            patronCt--;
+                        }
                     }
+                } else {
+                    //System.out.println("turned away: " + name);
+                    handleShopFull();
                 }
             } catch(InterruptedException e) {
                 error(e.getMessage());
