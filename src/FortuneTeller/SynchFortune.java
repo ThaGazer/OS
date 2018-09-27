@@ -60,7 +60,9 @@ public class SynchFortune {
              * You may add code in this method; you may not delete code
              */
             while (true) {
-                tellFortune();
+                synchronized (this) {
+                    tellFortune();
+                }
             }
         }
 
@@ -93,12 +95,18 @@ public class SynchFortune {
             /*
              * You may add code in this method; you may not delete code
              */
-            patronCt++;
-            if (patronCt > MAXPARLORCAPACITY + 1) {
-                error("Town unprepared for flooding after distracted fortune teller gives bad advice to weatherman (Too many patrons in parlor)");
+            synchronized (this) {
+                patronCt++;
+                if (patronCt > MAXPARLORCAPACITY + 1) {
+                    error("Town unprepared for flooding after distracted fortune teller gives bad advice to weatherman (Too many patrons in parlor)");
+                }
             }
+
             getFortune();
-            patronCt--;
+
+            synchronized (this) {
+                patronCt--;
+            }
         }
 
         public void getFortune() {

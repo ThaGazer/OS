@@ -9,6 +9,7 @@ package FortuneTeller;
 
 import java.util.Date;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SemaFortune {
@@ -21,6 +22,8 @@ public class SemaFortune {
 
     // Total number of patrons
     private int patronCt = 0;
+    //Balk rate
+    private int balkRate = 0;
     // Number of patrons receiving their fortune (should be a max of 1)
     private AtomicInteger ct = new AtomicInteger(0);
     // Generator for random events
@@ -29,6 +32,10 @@ public class SemaFortune {
     /*
      * You may add variables here
      */
+    private Semaphore crystalBallLock = new Semaphore(0);
+    private Semaphore fortuneLock = new Semaphore(1);
+    private Semaphore lock = new Semaphore(0);
+    private Semaphore patronLock = new Semaphore(MAXPARLORCAPACITY);
 
     public void go() {
         Teller teller = new Teller();
@@ -59,8 +66,22 @@ public class SemaFortune {
             /*
              * You may add code in this method; you may not delete code
              */
-            while (true) {
-                tellFortune();
+            try {
+                //initializes lock to be locked on first run through
+
+
+                while (true) {
+                    //wait for patron to show up
+                    crystalBallLock.acquire();
+
+                    //telling fortune
+                    tellFortune();
+
+                    //tell other patrons that the crystal ball is open
+                    lock.release();
+                }
+            } catch (InterruptedException e) {
+                error(e.getMessage());
             }
         }
 
@@ -93,12 +114,32 @@ public class SemaFortune {
             /*
              * You may add code in this method; you may not delete code
              */
-            patronCt++;
-            if (patronCt > MAXPARLORCAPACITY + 1) {
-                error("Town unprepared for flooding after distracted fortune teller gives bad advice to weatherman (Too many patrons in parlor)");
+            try {
+                //check for open seat in parlor
+                if(patronLock.tryAcquire()) {
+                    patronCt++;
+                    if (patronCt > MAXPARLORCAPACITY + 1) {
+                        error("Town unprepared for flooding after distracted fortune teller gives bad advice to weatherman (Too many patrons in parlor)");
+                    }
+
+                    //patron enters crystal ball
+                    fortuneLock.acquire();
+                    //tell fortune teller that you are here
+                    crystalBallLock.release();
+
+                    lock.acquire();
+                    getFortune();
+                    patronCt--;
+
+                    //leave parlor
+                    patronLock.release();
+                    fortuneLock.release();
+                } else {
+                    handleShopFull();
+                }
+            } catch (InterruptedException e) {
+                error(e.getMessage());
             }
-            getFortune();
-            patronCt--;
         }
 
         public void getFortune() {
@@ -106,8 +147,9 @@ public class SemaFortune {
             ct.decrementAndGet();
         }
 
-        public void handleShopFull() {
+        public synchronized void handleShopFull() {
             // Could add counter here to compute balk rate
+            balkRate++;
         }
     }
 }

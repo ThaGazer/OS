@@ -7,6 +7,9 @@ package FortuneTeller;
 
 import java.util.Date;
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Semaphore;
 
 /**
  * Simulation of Thriller Tribute problem
@@ -25,6 +28,9 @@ public class ThrillerTribute {
     /*
      * You may add variables here
      */
+    CyclicBarrier wall = new CyclicBarrier(3);
+    Semaphore mjLock = new Semaphore(1);
+    Semaphore zombieLock = new Semaphore(2);
 
     /**
      * Start MJ and zombie-spawning threads
@@ -63,6 +69,11 @@ public class ThrillerTribute {
 
     public static void main(String[] args) {
         new ThrillerTribute().go();
+    }
+
+    private static void error(final String msg) {
+        System.err.println(msg);
+        System.exit(1);
     }
 
     /**
@@ -159,15 +170,21 @@ public class ThrillerTribute {
          *          MJ impersonator dancer
          */
         public void addDancer(MJ mj) {
-            mjCt++;
-            // Test if too many MJs
-            if (mjCt > MAXMJS) {
-                System.err.println("Too many Michaels on the floor");
-                System.exit(1);
-            }
-            System.out.println(mj + " is ready to dance!");
+            try {
+                mjLock.acquire();
+                mjCt++;
+                // Test if too many MJs
+                if (mjCt > MAXMJS) {
+                    System.err.println("Too many Michaels on the floor");
+                    System.exit(1);
+                }
+                System.out.println(mj + " is ready to dance!");
 
-            finish();
+                finish();
+                wall.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                error(e.getMessage());
+            }
         }
 
         /**
@@ -177,21 +194,30 @@ public class ThrillerTribute {
          *          zombie dancer
          */
         public void addDancer(Zombie z) {
-            zombieCt++;
-            // Test if too many zombies
-            if (zombieCt > MAXZOMBIES) {
-                System.err.println("Too many Zombies on the floor");
-                System.exit(1);
-            }
-            System.out.println(z + " is ready to dance!");
+            try {
+                zombieLock.acquire();
+                zombieCt++;
+                // Test if too many zombies
+                if (zombieCt > MAXZOMBIES) {
+                    System.err.println("Too many Zombies on the floor");
+                    System.exit(1);
+                }
+                System.out.println(z + " is ready to dance!");
 
-            finish();
+                finish();
+                wall.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+             error(e.getMessage());
+            }
         }
 
         // Reset count if last dancer
         protected void finish() {
             if (mjCt == 1 && zombieCt == 2) {
+                System.out.println("dancing");
                 mjCt = zombieCt = 0;
+                mjLock.release();
+                zombieLock.release(2);
             }
         }
     }
