@@ -1,6 +1,6 @@
 /*
  * Author: Justin Ritter
- * File: null.java
+ * File: ThrillerTribute.java
  * Date: 9/26/2018
  */
 package FortuneTeller.part1;
@@ -44,10 +44,10 @@ public class ThrillerTribute {
                 int i = 0; // MJ impersonator ID
                 while (true) {
                     new Thread(new MJ(i++)).start();
-/*                    try {
+                    try {
                         sleep(rndGen.nextInt(MJDELAY));
                     } catch (InterruptedException e) {
-                    }*/
+                    }
                 }
             }
         }.start();
@@ -59,10 +59,10 @@ public class ThrillerTribute {
                 int i = 0; // Zombie ID
                 while (true) {
                     new Thread(new Zombie(i++)).start();
-/*                    try {
+                    try {
                         sleep(rndGen.nextInt(ZOMBIEDELAY));
                     } catch (InterruptedException e) {
-                    }*/
+                    }
                 }
             }
         }.start();
@@ -72,6 +72,11 @@ public class ThrillerTribute {
         new ThrillerTribute().go();
     }
 
+    /**
+     * I created this function for error handling
+     * Its exactly the same has the error function from Donahoo's Fortune.java
+     * @param msg error message
+     */
     private static void error(final String msg) {
         System.err.println(msg);
         System.exit(1);

@@ -1,19 +1,34 @@
+/*
+ * Author: Justin Ritter
+ * File: null.java
+ * Date: 10/10/2018
+ */
 package FortuneTeller.part2.parlor;
 
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 public class ParlorSemaphore implements Parlor {
 
-    private static final String errNullString = "name is not allowed to be null";
+    private static final String errParams = "improper capacity size";
+    private static final String errNullName = "everyone must have a name";
 
-    private ArrayBlockingQueue<String> que;
+    private Semaphore closeLock = new Semaphore(1);
+    private Semaphore parlorLock = new Semaphore(1);
+    private Semaphore tellerLock = new Semaphore(1);
+
     private boolean closed = false;
+    private int capacity;
+    private ArrayList<String> names;
 
     public ParlorSemaphore(int capacity) {
         if(capacity < 0 || capacity >= Integer.MAX_VALUE) {
-            que = new ArrayBlockingQueue<>(capacity);
+            this.capacity = capacity;
+        } else {
+            throw new IllegalArgumentException(errParams);
         }
+
+        names = new ArrayList<>(capacity);
     }
 
     /**
@@ -26,10 +41,18 @@ public class ParlorSemaphore implements Parlor {
      */
     @Override
     public String tellFortune() {
-        if(!isClose()) {
+        if(!isClosed()) {
             try {
-                return que.take();
-            } catch (InterruptedException e) {
+                while(names.size() <= 0) {
+                    if(isClosed()) {
+                        return null;
+                    }
+                    tellerLock.acquire();
+                }
+
+                return names.remove(0);
+            } catch(InterruptedException e) {
+                System.err.println(e.getMessage());
                 return null;
             }
         } else {
@@ -45,18 +68,29 @@ public class ParlorSemaphore implements Parlor {
      * is closed.
      *
      * @param name name of patron
-     *
-     * @throws NullPointerException
-     *           if name is null
      * @return true if patron was added or false if the parlor was full or closed
+     * @throws NullPointerException if name is null
      */
     @Override
     public boolean newPatron(String name) {
-        if(!isClose()) {
+        if(!isClosed()) {
             if(name == null) {
-                throw new NullPointerException(errNullString);
+                throw new NullPointerException(errNullName);
             }
-            return que.offer(name);
+
+            try {
+                parlorLock.acquire();
+                boolean ret = false;
+                if(names.size() < capacity) {
+                    names.add(name);
+                    ret = true;
+                }
+                parlorLock.release();
+                return ret;
+            } catch(InterruptedException e) {
+                System.err.println(e.getMessage());
+                return false;
+            }
         } else {
             return false;
         }
@@ -69,11 +103,21 @@ public class ParlorSemaphore implements Parlor {
      */
     @Override
     public void close() {
-        que.clear();
-        closed = true;
+        setClosed();
+        tellerLock.notifyAll();
     }
 
-    private boolean isClose() {
+    private synchronized boolean isClosed() {
         return closed;
+    }
+
+    private void setClosed() {
+        try {
+            closeLock.acquire();
+            closed = true;
+            closeLock.release();
+        } catch(InterruptedException e) {
+            System.err.println(e.getMessage());
+        }
     }
 }

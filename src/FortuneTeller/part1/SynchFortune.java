@@ -147,7 +147,6 @@ public class SynchFortune {
                         }
                     }
                 } else {
-                    //System.out.println("turned away: " + name);
                     handleShopFull();
                 }
             } catch(InterruptedException e) {
