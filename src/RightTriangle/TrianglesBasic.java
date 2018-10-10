@@ -55,8 +55,8 @@ public class TrianglesBasic {
         int numOfRightTri = 0;
 
         for(int i = 0; i < totalPnts; i++) {
-            for(int j = 0; j < totalPnts; j++) {
-                for(int k = 0; k < totalPnts; k++) {
+            for(int j = i+1; j < totalPnts; j++) {
+                for(int k = j+1; k < totalPnts; k++) {
                     int x1 = pointsX.get(i),x2 = pointsX.get(j),x3 = pointsX.get(k),
                             y1 = pointsY.get(i),y2 = pointsY.get(j),y3 = pointsY.get(k);
 

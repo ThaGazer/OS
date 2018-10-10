@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE log SYSTEM "logger.dtd">
+<log>
+<record>
+  <date>2018-04-25T02:26:38</date>
+  <millis>1524641198036</millis>
+  <sequence>0</sequence>
+  <logger>AIO.AsynchIO</logger>
+  <level>INFO</level>
+  <class>AIO.AsynchIO$1</class>
+  <method>completed</method>
+  <thread>15</thread>
+  <message>Printing: 0 est1 0</message>
+</record>
+</log>

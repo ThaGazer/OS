@@ -39,7 +39,7 @@ public class Point {
     }
 
     public int distance(Point p1) {
-        return ((getX() - p1.getX())*(getX() - p1.getX())) + ((getY() - p1.getY())*(getY() - p1.getY()));
+        return Math.abs(((getX() - p1.getX())*(getX() - p1.getX())) + ((getY() - p1.getY())*(getY() - p1.getY())));
     }
 
     @Override
