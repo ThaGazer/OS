@@ -3,7 +3,7 @@
  * File: ThrillerTribute.java
  * Date: 9/26/2018
  */
-package FortuneTeller;
+package FortuneTeller.part1;
 
 import java.util.Date;
 import java.util.Random;
