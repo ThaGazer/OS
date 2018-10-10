@@ -3,7 +3,7 @@
  * File: SemaFortune.java
  * Date: 9/26/2018
  */
-package FortuneTeller;
+package FortuneTeller.part1;
 
 // You may only add code where indicated
 
