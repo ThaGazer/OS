@@ -41,10 +41,10 @@ public class AsynchIO {
 
         ArrayList<String> commands = new ArrayList<>(readAllLines(args[0]));
         for(String line : commands) {
-             if(!commandChecker(line.split(" "))) {
-                 logger.severe(errParsing);
-                 System.exit(1);
-             }
+            if(!commandChecker(line.split(" "))) {
+                logger.severe(errParsing);
+                System.exit(1);
+            }
         }
 
         for(String line : commands) {
@@ -72,7 +72,7 @@ public class AsynchIO {
                                 logger.warning(errReadFailed);
                             }
                         });
-            } catch (IOException e) {
+            } catch(IOException e) {
                 logger.log(Level.SEVERE, errReadFailed, e);
                 System.exit(2);
             }
@@ -85,7 +85,7 @@ public class AsynchIO {
             lines = new ArrayList<>
                     (Files.readAllLines
                             (Paths.get(fileName), StandardCharsets.US_ASCII));
-        } catch (IOException e) {
+        } catch(IOException e) {
             logger.log(Level.SEVERE, errFNF, e);
             System.exit(2);
         }

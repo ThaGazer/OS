@@ -28,7 +28,7 @@ public class KnifeSem extends KnifeTag {
                 janitor.acquire();
                 numCompetitors = 0;
             }
-        } catch (InterruptedException e) {
+        } catch(InterruptedException e) {
             System.out.println(funcPreCle + e.getMessage());
         }
     }
@@ -71,7 +71,7 @@ public class KnifeSem extends KnifeTag {
             numberCompetLock.acquire();
             numCompetitors = numCompetitors - 1;
             numberCompetLock.release();
-        } catch (InterruptedException e) {
+        } catch(InterruptedException e) {
             e.printStackTrace();
         }
 

@@ -42,6 +42,7 @@ public class Triangles {
 
     /**
      * reads points from a file
+     *
      * @param fileName file to read from
      */
     private void readPoints(String fileName) {
@@ -80,10 +81,10 @@ public class Triangles {
         } catch(NumberFormatException nfe) {
             System.err.println(errFileFormat + nfe.getMessage());
             System.exit(1);
-        } catch (FileNotFoundException e) {
+        } catch(FileNotFoundException e) {
             System.err.println(errFNF + e.getMessage());
             System.exit(1);
-        } catch (IOException e) {
+        } catch(IOException e) {
             System.err.println(errFileFormat + e.getMessage());
             System.exit(1);
         }
@@ -91,6 +92,7 @@ public class Triangles {
 
     /**
      * find the total number of right triangles in the set
+     *
      * @return total number of right triangles
      */
     private int findTriangles() {
@@ -105,25 +107,25 @@ public class Triangles {
         //prevents excessive thread creation
         ExecutorService pool = Executors.newFixedThreadPool(nprocs);
 
-        long totalLoad = ((((long)points.size()*points.size()*points.size()))-
-                ((3L*points.size()*points.size()))+((2L*points.size())));
-        totalLoad = totalLoad/6L + (totalLoad%6L);
+        long totalLoad = ((((long) points.size() * points.size() * points.size())) -
+                ((3L * points.size() * points.size())) + ((2L * points.size())));
+        totalLoad = totalLoad / 6L + (totalLoad % 6L);
 
         long workLoad = totalLoad / nprocs;
         long remainder = totalLoad % nprocs;
 
         long workCount = 0, threadWork = workLoad;
         for(int i = 0; i < points.size() && nprocs > 0; i++) {
-            for(int j = i+1; j < points.size() && nprocs > 0; j++) {
-                for(int k = j+1; k < points.size() && nprocs > 0; k++) {
-                    if((workCount%threadWork) == 0) {
+            for(int j = i + 1; j < points.size() && nprocs > 0; j++) {
+                for(int k = j + 1; k < points.size() && nprocs > 0; k++) {
+                    if((workCount % threadWork) == 0) {
                         nprocs--;
 
                         if(nprocs == 0) {
-                            threadWork+=remainder;
+                            threadWork += remainder;
                         }
 
-                        pool.execute(new RightTriangleFinder(i,j,k,threadWork));
+                        pool.execute(new RightTriangleFinder(i, j, k, threadWork));
                     }
                     workCount++;
                 }
@@ -133,7 +135,8 @@ public class Triangles {
         pool.shutdown();
 
         //waiting for pool to completely shutdown before reporting result
-        while(!pool.isTerminated()) {}
+        while(!pool.isTerminated()) {
+        }
     }
 
     /**
@@ -141,7 +144,7 @@ public class Triangles {
      */
     private class RightTriangleFinder implements Runnable {
 
-        private int i,j,k;
+        private int i, j, k;
         private long amount;
 
         RightTriangleFinder(int i, int j, int k, long workLoad) {
@@ -158,7 +161,7 @@ public class Triangles {
                 if(!start) {
                     j = i + 1;
                 }
-                for (; j < points.size() && amount > 0; j++) {
+                for(; j < points.size() && amount > 0; j++) {
                     if(!start) {
                         k = j + 1;
                     }
@@ -173,7 +176,7 @@ public class Triangles {
 
                         try {
                             sem.acquire();
-                            if (!checkTriangles.contains(t)) {
+                            if(!checkTriangles.contains(t)) {
                                 sem.release();
                                 if(t.isRight()) {
                                     sem.acquire();
@@ -184,7 +187,7 @@ public class Triangles {
                                     sem.release();
                                 }
                             }
-                        } catch (InterruptedException e) {
+                        } catch(InterruptedException e) {
                             System.err.println(errSemAcquire + e.getMessage());
                         }
                     }

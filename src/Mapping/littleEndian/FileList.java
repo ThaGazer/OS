@@ -64,7 +64,7 @@ public class FileList {
 
         List<Node2> list = new ArrayList<>();
         MappedByteBuffer fMapped;
-        try{
+        try {
             fMapped = new RandomAccessFile(filename, "r").getChannel().
                     map(FileChannel.MapMode.READ_ONLY, 0, filename.getTotalSpace());
 
@@ -77,9 +77,9 @@ public class FileList {
                 i = list.get(i).next) {
                 System.out.println(list.get(i).getValue());
             }
-        } catch (FileNotFoundException e) {
+        } catch(FileNotFoundException e) {
             System.err.println(e.getMessage());
-        } catch (IOException e) {
+        } catch(IOException e) {
             e.printStackTrace();
         }
     }
@@ -90,7 +90,7 @@ public class FileList {
     }
 
     private static int little2big(int i) {
-        return (i&0xff)<<24 | (i&0xff00)<<8 | (i&0xff0000)>>8 | (i>>24)&0xff;
+        return (i & 0xff) << 24 | (i & 0xff00) << 8 | (i & 0xff0000) >> 8 | (i >> 24) & 0xff;
     }
 
     private static int readInt(MappedByteBuffer b) {

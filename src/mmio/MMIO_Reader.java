@@ -46,6 +46,7 @@ public class MMIO_Reader {
 
         /**
          * creates a new Node using a mapped byte buffer
+         *
          * @param buff mapped byt ebuffer
          */
         Node(MappedByteBuffer buff) {
@@ -54,31 +55,34 @@ public class MMIO_Reader {
 
         /**
          * checks bounds of index to be with in the buffer
+         *
          * @param i index to check
          */
         private void boundsCheck(int i) {
-            if(i < 0 || i >= getSize())  {
+            if(i < 0 || i >= getSize()) {
                 throw new IllegalArgumentException(errOB);
             }
         }
 
         /**
-         *  sets the tree
+         * sets the tree
          */
         private void setTree(MappedByteBuffer buff) {
-            tree = (MappedByteBuffer)buff.slice();
+            tree = (MappedByteBuffer) buff.slice();
         }
 
         /**
          * returns number of Nodes in the buffer
+         *
          * @return number of Nodes
          */
         private int getSize() {
-            return tree.capacity()/SIZEOF_NODE;
+            return tree.capacity() / SIZEOF_NODE;
         }
 
         /**
          * converts little endian to bif endian
+         *
          * @param i integer to convert
          * @return big endian representation of i
          */
@@ -88,6 +92,7 @@ public class MMIO_Reader {
 
         /**
          * returns the Location of Node at index
+         *
          * @param index index of the Node
          * @return Location of Node in tree
          */
@@ -99,41 +104,45 @@ public class MMIO_Reader {
 
         /**
          * returns the Left pointer of Node at index
+         *
          * @param index index of Node
          * @return Left pointer of Node
          */
         int getLeft(int index) {
             boundsCheck(index);
             index *= SIZEOF_NODE;
-            return little2Big(tree.getInt(index+8));
+            return little2Big(tree.getInt(index + 8));
         }
 
         /**
          * returns the Right pointer of Node at index
+         *
          * @param index index of Node
          * @return Right pointer of Node
          */
         int getRight(int index) {
             boundsCheck(index);
             index *= SIZEOF_NODE;
-            return little2Big(tree.getInt(index+12));
+            return little2Big(tree.getInt(index + 12));
         }
 
         /**
          * returns the Value of the Node at index
+         *
          * @param index index of Node
          * @return Value of Node
          */
         String getValue(int index) {
             boundsCheck(index);
             index *= SIZEOF_NODE;
-            return "" + (char)tree.get(index+4) + (char)tree.get(index+5);
+            return "" + (char) tree.get(index + 4) + (char) tree.get(index + 5);
         }
 
         /**
          * changes the Value of a Node at index to str
+         *
          * @param index index of Node
-         * @param str string to change Value to
+         * @param str   string to change Value to
          */
         void setValue(int index, String str) {
             boundsCheck(index);
@@ -142,12 +151,13 @@ public class MMIO_Reader {
             }
 
             index *= SIZEOF_NODE;
-            tree.put(index+4, (byte)str.charAt(0));
-            tree.put(index+5, (byte)str.charAt(1));
+            tree.put(index + 4, (byte) str.charAt(0));
+            tree.put(index + 5, (byte) str.charAt(1));
         }
 
         /**
          * prints the left side of the tree at index
+         *
          * @param index index of Node
          * @return the tree represented as a string
          */
@@ -157,6 +167,7 @@ public class MMIO_Reader {
 
         /**
          * prints the whole tree
+         *
          * @return the tree representation as a string
          */
         String printTree() {
@@ -165,6 +176,7 @@ public class MMIO_Reader {
 
         /**
          * prints the tree starting at index. If index is -1 print nothing
+         *
          * @param index index of Node to start reading
          * @return the tree representation as a string
          */
@@ -183,6 +195,7 @@ public class MMIO_Reader {
 
         /**
          * string representation of a Node at index
+         *
          * @param index index of Node
          * @return string representation of aNode
          */
@@ -239,7 +252,7 @@ public class MMIO_Reader {
         @Override
         public void run() {
             while(true) {
-                int nodeIndex = random.nextInt(tree.getSize()-1);
+                int nodeIndex = random.nextInt(tree.getSize() - 1);
                 try {
 
                     wCntLock.acquire();
@@ -274,11 +287,12 @@ public class MMIO_Reader {
 
         /**
          * creates a random character from A-Z
+         *
          * @return two chars as a string
          */
         private String randomChar() {
             char a = 'A';
-            return "" + (char)(a + random.nextInt(26));
+            return "" + (char) (a + random.nextInt(26));
         }
     }
 
@@ -288,6 +302,7 @@ public class MMIO_Reader {
 
     /**
      * seed for main
+     *
      * @param args parameters from user
      * @throws IOException if i/o problems
      */

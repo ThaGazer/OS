@@ -50,7 +50,7 @@ public class SpeedTest {
                 System.out.println(topOutput);
 
                 long start = System.nanoTime();
-                type.getDeclaredMethod("main", String[].class).invoke(null,(Object)args);
+                type.getDeclaredMethod("main", String[].class).invoke(null, (Object) args);
                 long stop = System.nanoTime();
 
                 for(int j = 0; j < topOutput.length(); j++) {
@@ -58,8 +58,8 @@ public class SpeedTest {
                 }
                 System.out.println();
 
-                System.out.println("Program runtime " + i + ": " + (stop-start) + "ns");
-                times.add((stop-start));
+                System.out.println("Program runtime " + i + ": " + (stop - start) + "ns");
+                times.add((stop - start));
             } catch(Exception e) {
                 System.err.println(errTriangleRun + e.getCause());
                 return new String[]{};
@@ -76,7 +76,7 @@ public class SpeedTest {
         }
         sum = TimeUnit.NANOSECONDS.toMillis(sum);
 
-        return new String[]{String.valueOf(sum), String.valueOf((double)sum/times.size())};
+        return new String[]{String.valueOf(sum), String.valueOf((double) sum / times.size())};
     }
 
     private static void fillAFile(String fileName) throws IOException {

@@ -25,7 +25,7 @@ public class KnifeTag {
     /**
      * Executes cleaning of the knifetag course
      *
-     * @param ms number of milliseconds cleaning takes
+     * @param ms   number of milliseconds cleaning takes
      * @param name name of cleaner
      */
     public final void clean(int ms, String name) {
@@ -51,7 +51,7 @@ public class KnifeTag {
     /**
      * Executes competitor in the knifetag course
      *
-     * @param ms number of milliseconds for competing
+     * @param ms   number of milliseconds for competing
      * @param name name of competitor
      */
     public final void compete(int ms, String name) {
@@ -82,7 +82,7 @@ public class KnifeTag {
     public static void sleep(int ms) {
         try {
             Thread.sleep(ms);
-        } catch (InterruptedException e) {
+        } catch(InterruptedException e) {
             System.err.println("Unexpected interruption: " + e.getMessage());
         }
     }

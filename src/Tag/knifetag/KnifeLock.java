@@ -29,7 +29,7 @@ public class KnifeLock extends KnifeTag {
             try {
                 janitorQue.put(numCompetitors);
                 numCompetitors = 0;
-            } catch (InterruptedException e) {
+            } catch(InterruptedException e) {
                 System.out.println(funcPreCle + e.getMessage());
             }
         }
@@ -42,7 +42,7 @@ public class KnifeLock extends KnifeTag {
     protected void postClean() {
         try {
             janitorQue.take();
-        } catch (InterruptedException e) {
+        } catch(InterruptedException e) {
             System.out.println(funcPostCle + e.getMessage());
         }
     }
@@ -57,7 +57,7 @@ public class KnifeLock extends KnifeTag {
                 que.put(numCompetitors);
                 numCompetitors = numCompetitors + 1;
             }
-        } catch (InterruptedException e) {
+        } catch(InterruptedException e) {
             System.out.println(funcPreCom + e.getMessage());
         }
     }
@@ -70,7 +70,7 @@ public class KnifeLock extends KnifeTag {
         try {
             numCompetitors = numCompetitors - 1;
             que.take();
-        } catch (InterruptedException e) {
+        } catch(InterruptedException e) {
             System.out.println(funcPostCom + e.getMessage());
         }
     }

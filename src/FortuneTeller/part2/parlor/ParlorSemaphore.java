@@ -1,6 +1,6 @@
 /*
  * Author: Justin Ritter
- * File: null.java
+ * File: ParlorSemaphore.java
  * Date: 10/10/2018
  */
 package FortuneTeller.part2.parlor;
@@ -23,11 +23,10 @@ public class ParlorSemaphore implements Parlor {
 
     public ParlorSemaphore(int capacity) {
         if(capacity < 0 || capacity >= Integer.MAX_VALUE) {
-            this.capacity = capacity;
-        } else {
             throw new IllegalArgumentException(errParams);
         }
 
+        this.capacity = capacity;
         names = new ArrayList<>(capacity);
     }
 
@@ -103,8 +102,14 @@ public class ParlorSemaphore implements Parlor {
      */
     @Override
     public void close() {
-        setClosed();
-        tellerLock.notifyAll();
+        try {
+            closeLock.acquire();
+            setClosed();
+            tellerLock.notifyAll();
+            closeLock.release();
+        } catch(InterruptedException e) {
+            System.err.println(e.getMessage());
+        }
     }
 
     private synchronized boolean isClosed() {
@@ -112,12 +117,6 @@ public class ParlorSemaphore implements Parlor {
     }
 
     private void setClosed() {
-        try {
-            closeLock.acquire();
-            closed = true;
-            closeLock.release();
-        } catch(InterruptedException e) {
-            System.err.println(e.getMessage());
-        }
+        closed = true;
     }
 }

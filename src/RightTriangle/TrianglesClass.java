@@ -41,7 +41,7 @@ public class TrianglesClass {
             if(points.size() != totalPoints) {
                 throw new Exception(errPoints);
             }
-        } catch (FileNotFoundException e) {
+        } catch(FileNotFoundException e) {
             System.err.println(errFNF + filename);
         }
     }
@@ -49,8 +49,8 @@ public class TrianglesClass {
     protected int findTriangles() {
         int totalRight = 0;
 
-        for(int i = 0; i < points.size()-2; i++) {
-            for(int j = i+1; j < points.size(); j++) {
+        for(int i = 0; i < points.size() - 2; i++) {
+            for(int j = i + 1; j < points.size(); j++) {
                 for(int k = j; k < points.size(); k++) {
                     if(rightCheck(points.get(i), points.get(j), points.get(k))) {
                         totalRight++;
@@ -63,7 +63,7 @@ public class TrianglesClass {
 
     private boolean rightCheck(Point p1, Point p2, Point p3) {
         if(!p1.isZeroSlope(p2, p3)) {
-            int a,b,c, temp;
+            int a, b, c, temp;
             c = p1.distance(p2);
 
             a = p1.distance(p3);
@@ -80,7 +80,7 @@ public class TrianglesClass {
                 b = temp;
             }
 
-            return a+b == c;
+            return a + b == c;
         } else {
             return false;
         }

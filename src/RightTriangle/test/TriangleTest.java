@@ -13,7 +13,7 @@ class TriangleTest {
 
     @BeforeEach
     void before() {
-        tri = new Triangle(new Point(0,0), new Point(0,1), new Point(1,0));
+        tri = new Triangle(new Point(0, 0), new Point(0, 1), new Point(1, 0));
     }
 
     @Test
@@ -41,18 +41,18 @@ class TriangleTest {
 
     @Test
     void test_EqualtPoints() {
-        Triangle tri2 = new Triangle(new Point(0,0), new Point(0,1), new Point(0,1));
-        Triangle tri3 = new Triangle(new Point(0,1), new Point(0,1), new Point(0,1));
+        Triangle tri2 = new Triangle(new Point(0, 0), new Point(0, 1), new Point(0, 1));
+        Triangle tri3 = new Triangle(new Point(0, 1), new Point(0, 1), new Point(0, 1));
 
-        assertNotEquals(tri,tri2);
+        assertNotEquals(tri, tri2);
         assertNotEquals(tri2, tri);
         assertNotEquals(tri2, tri3);
     }
 
     @Test
     void test_Point() {
-        Point p1 = new Point(0,1);
-        Point p2 = new Point(1,0);
+        Point p1 = new Point(0, 1);
+        Point p2 = new Point(1, 0);
         assertNotEquals(p1, p2);
     }
 }

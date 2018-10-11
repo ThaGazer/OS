@@ -40,7 +40,7 @@ public class ThreadedMonteCarlo {
 
         //calculates how much each thread should handle
         int start = 0;
-        int amnount = totPnts/nProc;
+        int amnount = totPnts / nProc;
         int[][] params = new int[nProc][2];
 
         for(int i = 0; i < nProc; i++) {
@@ -50,7 +50,7 @@ public class ThreadedMonteCarlo {
         }
         //adds extra points to last thread
         if(start < totPnts) {
-            params[nProc-1][0] += (totPnts-start);
+            params[nProc - 1][0] += (totPnts - start);
         }
 
         ExecutorService exec = Executors.newCachedThreadPool();
@@ -63,19 +63,20 @@ public class ThreadedMonteCarlo {
         int totPntIn = 0;
         for(Future r : res) {
             try {
-                totPntIn += (int)r.get();
+                totPntIn += (int) r.get();
             } catch(Exception e) {
                 e.printStackTrace();
             }
         }
 
-        double pi = 4 * ((double)totPntIn/totPnts);
+        double pi = 4 * ((double) totPntIn / totPnts);
         System.out.println("pi is equal to: " + pi);
     }
 
     static class thread implements Callable<Integer> {
 
         private int where, howMuch;
+
         private thread(int[] a) {
             where = a[0];
             howMuch = a[1];
@@ -85,7 +86,7 @@ public class ThreadedMonteCarlo {
         public Integer call() {
 
             int count = 0;
-            for(int i = where; i < (where+howMuch); i++) {
+            for(int i = where; i < (where + howMuch); i++) {
                 String[] splitLine = lines[i].split(", ");
                 double x = Double.parseDouble(splitLine[0]);
                 double y = Double.parseDouble(splitLine[1]);

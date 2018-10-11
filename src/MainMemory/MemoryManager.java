@@ -100,10 +100,10 @@ public class MemoryManager {
         for(int i = 0; i < stack.size(); i++) {
             MyInt val = stack.get(i);
 
-            System.out.print(i+1 + " ");
+            System.out.print(i + 1 + " ");
             if(val == null) {
                 System.out.println("Free");
-            }else {
+            } else {
                 System.out.println(val);
             }
         }
@@ -137,12 +137,12 @@ public class MemoryManager {
             }
 
             if(openCount == size) {
-                index = i+1;
+                index = i + 1;
                 breakOut = true;
             }
         }
 
-        return setStack(index-openCount, id, size);
+        return setStack(index - openCount, id, size);
     }
 
     private static boolean bestFit(int id, int size) {
@@ -172,7 +172,7 @@ public class MemoryManager {
                 openCount++;
             } else {
                 if(openCount != 0 && openCount >= minSize) {
-                    holes.put(openCount, i-openCount);
+                    holes.put(openCount, i - openCount);
                 }
                 openCount = 0;
             }
@@ -185,11 +185,11 @@ public class MemoryManager {
     }
 
     private static boolean setStack(int index, int id, int size) {
-        if(index < 0 || index+size > stack.size()) {
+        if(index < 0 || index + size > stack.size()) {
             return false;
         }
 
-        for(int i = index; i < index+size; i++) {
+        for(int i = index; i < index + size; i++) {
             stack.set(i, new MyInt(id));
         }
         return true;
@@ -280,7 +280,7 @@ public class MemoryManager {
             if(obj == null || !this.getClass().equals(obj.getClass())) {
                 return false;
             }
-            MyInt that = (MyInt)obj;
+            MyInt that = (MyInt) obj;
             return this.getInt() == that.getInt();
         }
     }
@@ -293,7 +293,7 @@ public class MemoryManager {
         }
     }
 
-    static class maxSort implements  Comparator<Integer> {
+    static class maxSort implements Comparator<Integer> {
 
         @Override
         public int compare(Integer o1, Integer o2) {

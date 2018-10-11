@@ -42,11 +42,11 @@ public class ThrillerTribute {
             @Override
             public void run() {
                 int i = 0; // MJ impersonator ID
-                while (true) {
+                while(true) {
                     new Thread(new MJ(i++)).start();
                     try {
                         sleep(rndGen.nextInt(MJDELAY));
-                    } catch (InterruptedException e) {
+                    } catch(InterruptedException e) {
                     }
                 }
             }
@@ -57,11 +57,11 @@ public class ThrillerTribute {
             @Override
             public void run() {
                 int i = 0; // Zombie ID
-                while (true) {
+                while(true) {
                     new Thread(new Zombie(i++)).start();
                     try {
                         sleep(rndGen.nextInt(ZOMBIEDELAY));
-                    } catch (InterruptedException e) {
+                    } catch(InterruptedException e) {
                     }
                 }
             }
@@ -75,6 +75,7 @@ public class ThrillerTribute {
     /**
      * I created this function for error handling
      * Its exactly the same has the error function from Donahoo's Fortune.java
+     *
      * @param msg error message
      */
     private static void error(final String msg) {
@@ -92,8 +93,7 @@ public class ThrillerTribute {
         /**
          * MJ impersonator constructor
          *
-         * @param id
-         *          id of MJ impersonator
+         * @param id id of MJ impersonator
          */
         public MJ(int id) {
             this.id = id;
@@ -126,8 +126,7 @@ public class ThrillerTribute {
         /**
          * Zombie constructor
          *
-         * @param id
-         *          id of zombie
+         * @param id id of zombie
          */
         public Zombie(int id) {
             this.id = id;
@@ -172,8 +171,7 @@ public class ThrillerTribute {
         /**
          * Add MJ impersonator dancer to the floor
          *
-         * @param mj
-         *          MJ impersonator dancer
+         * @param mj MJ impersonator dancer
          */
         public void addDancer(MJ mj) {
             try {
@@ -189,7 +187,7 @@ public class ThrillerTribute {
                     finish();
                     wall.await();
                 }
-            } catch (InterruptedException | BrokenBarrierException e) {
+            } catch(InterruptedException | BrokenBarrierException e) {
                 error(e.getMessage());
             }
         }
@@ -197,8 +195,7 @@ public class ThrillerTribute {
         /**
          * Add zombie dancer to the floor
          *
-         * @param z
-         *          zombie dancer
+         * @param z zombie dancer
          */
         public void addDancer(Zombie z) {
             try {
@@ -214,8 +211,8 @@ public class ThrillerTribute {
                     finish();
                     wall.await();
                 }
-            } catch (InterruptedException | BrokenBarrierException e) {
-             error(e.getMessage());
+            } catch(InterruptedException | BrokenBarrierException e) {
+                error(e.getMessage());
             }
         }
 

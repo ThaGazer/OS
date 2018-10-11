@@ -60,23 +60,21 @@ public class ManagerSemaphore {
 
         // Continually generate new fans
         int i = 0;
-        while (true) {
+        while(true) {
             new Thread(new Fan(), "Fan " + i++).start();
             try {
                 Thread.sleep(rndGen.nextInt(MAX_TIME_IN_BETWEEN_ARRIVALS));
-            } catch (InterruptedException e) {
+            } catch(InterruptedException e) {
                 System.err.println(e.toString());
                 System.exit(1);
             }
         }
     }
 
-    class Celebrity implements Runnable
-    {
+    class Celebrity implements Runnable {
         @Override
         public void run() {
-            while (true)
-            {
+            while(true) {
                 try {
                     celebSem.acquire();
 
@@ -92,12 +90,12 @@ public class ManagerSemaphore {
                 System.out.println("Celebrity takes a picture with fans");
 
                 // Remove the fans from the line
-                for (int i = 0; i < MIN_FANS; i++) {
+                for(int i = 0; i < MIN_FANS; i++) {
                     System.out.println(line.remove(0).getName() + ": OMG! Thank you!");
                 }
 
                 // Adjust the numFans variable
-                numFansInLine-= MIN_FANS;
+                numFansInLine -= MIN_FANS;
 
                 lineSem.release();
                 fanSem.release(MIN_FANS);
@@ -106,7 +104,7 @@ public class ManagerSemaphore {
                 try {
                     Thread.sleep(rndGen
                             .nextInt(MAX_BREAK_TIME));
-                } catch (InterruptedException e) {
+                } catch(InterruptedException e) {
                     System.err.println(e.toString());
                     System.exit(1);
                 }
@@ -117,25 +115,23 @@ public class ManagerSemaphore {
     }
 
     public void checkCelebrityOK() {
-        if (numFansInLine > MAX_ALLOWED_IN_QUEUE)
-        {
+        if(numFansInLine > MAX_ALLOWED_IN_QUEUE) {
             System.err.println("Celebrity becomes claustrophobic and flips out");
             System.exit(1);
         }
 
-        if (numFansInLine < MIN_FANS)
-        {
+        if(numFansInLine < MIN_FANS) {
             System.err.println("Celebrity becomes enraged that he was woken from nap for too few fans");
             System.exit(1);
         }
     }
 
-    class Fan implements Runnable
-    {
+    class Fan implements Runnable {
         String name;
 
-        public String getName()
-        { return name;}
+        public String getName() {
+            return name;
+        }
 
         @Override
         public void run() {
@@ -153,7 +149,7 @@ public class ManagerSemaphore {
             // Look in the exhibit for a little while
             try {
                 Thread.sleep(rndGen.nextInt(MAX_EXHIBIT_TIME));
-            } catch (InterruptedException e) {
+            } catch(InterruptedException e) {
                 System.err.println(e.toString());
                 System.exit(1);
             }

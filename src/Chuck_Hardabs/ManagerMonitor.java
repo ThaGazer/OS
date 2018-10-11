@@ -48,23 +48,21 @@ public class ManagerMonitor {
 
         // Continually generate new fans
         int i = 0;
-        while (true) {
+        while(true) {
             new Thread(new Fan(), "Fan " + i++).start();
             try {
                 Thread.sleep(rndGen.nextInt(MAX_TIME_IN_BETWEEN_ARRIVALS));
-            } catch (InterruptedException e) {
+            } catch(InterruptedException e) {
                 System.err.println(e.toString());
                 System.exit(1);
             }
         }
     }
 
-    class Celebrity implements Runnable
-    {
+    class Celebrity implements Runnable {
         @Override
         public void run() {
-            while (true)
-            {
+            while(true) {
 
                 // Check to see if celebrity flips out
                 synchronized(this) {
@@ -97,7 +95,7 @@ public class ManagerMonitor {
                 try {
                     Thread.sleep(rndGen
                             .nextInt(MAX_BREAK_TIME));
-                } catch (InterruptedException e) {
+                } catch(InterruptedException e) {
                     System.err.println(e.toString());
                     System.exit(1);
                 }
@@ -106,27 +104,24 @@ public class ManagerMonitor {
 
     }
 
-    public void checkCelebrityOK()
-    {
-        if (numFansInLine > MAX_ALLOWED_IN_QUEUE)
-        {
+    public void checkCelebrityOK() {
+        if(numFansInLine > MAX_ALLOWED_IN_QUEUE) {
             System.err.println("Celebrity becomes claustrophobic and flips out");
             System.exit(1);
         }
 
-        if (numFansInLine < MIN_FANS)
-        {
+        if(numFansInLine < MIN_FANS) {
             System.err.println("Celebrity becomes enraged that he was woken from nap for too few fans");
             System.exit(1);
         }
     }
 
-    class Fan implements Runnable
-    {
+    class Fan implements Runnable {
         String name;
 
-        public String getName()
-        { return name;}
+        public String getName() {
+            return name;
+        }
 
         @Override
         public void run() {
@@ -138,7 +133,7 @@ public class ManagerMonitor {
             // Look in the exhibit for a little while
             try {
                 Thread.sleep(rndGen.nextInt(MAX_EXHIBIT_TIME));
-            } catch (InterruptedException e) {
+            } catch(InterruptedException e) {
                 System.err.println(e.toString());
                 System.exit(1);
             }

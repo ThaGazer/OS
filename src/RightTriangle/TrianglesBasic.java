@@ -32,8 +32,8 @@ public class TrianglesBasic {
         try(Scanner scn = new Scanner(new File(fileName))) {
             totalPnts = scn.nextInt();
 
-            for(int i = 0; i < (totalPnts*2); i++) {
-                if((i%2) == 0) {
+            for(int i = 0; i < (totalPnts * 2); i++) {
+                if((i % 2) == 0) {
                     pointsX.add(Integer.parseInt(scn.next()));
                 } else {
                     pointsY.add(Integer.parseInt(scn.next()));
@@ -55,21 +55,21 @@ public class TrianglesBasic {
         int numOfRightTri = 0;
 
         for(int i = 0; i < totalPnts; i++) {
-            for(int j = i+1; j < totalPnts; j++) {
-                for(int k = j+1; k < totalPnts; k++) {
-                    int x1 = pointsX.get(i),x2 = pointsX.get(j),x3 = pointsX.get(k),
-                            y1 = pointsY.get(i),y2 = pointsY.get(j),y3 = pointsY.get(k);
+            for(int j = i + 1; j < totalPnts; j++) {
+                for(int k = j + 1; k < totalPnts; k++) {
+                    int x1 = pointsX.get(i), x2 = pointsX.get(j), x3 = pointsX.get(k),
+                            y1 = pointsY.get(i), y2 = pointsY.get(j), y3 = pointsY.get(k);
 
-                    findDup(x1,y1,x2,y2,x3,y3);
+                    findDup(x1, y1, x2, y2, x3, y3);
 
                     if(!(x1 == x2 && x1 == x3 || y1 == y2 && y1 == y3)) {
                         if(!(x1 == x2 && y1 == y2 || x1 == x3 && y1 == y3 || x2 == x3 && y2 == y3)) {
-                            if (!containsTriangle(foundX, foundY, x1, y1, x2, y2, x3, y3)) {
+                            if(!containsTriangle(foundX, foundY, x1, y1, x2, y2, x3, y3)) {
                                 int a, b, c, temp;
                                 c = distanceFormula(x1, y1, x2, y2);
 
                                 temp = distanceFormula(x1, y1, x3, y3);
-                                if (c < temp) {
+                                if(c < temp) {
                                     b = c;
                                     c = temp;
                                 } else {
@@ -77,14 +77,14 @@ public class TrianglesBasic {
                                 }
 
                                 temp = distanceFormula(x2, y2, x3, y3);
-                                if (c < temp) {
+                                if(c < temp) {
                                     a = c;
                                     c = temp;
                                 } else {
                                     a = temp;
                                 }
 
-                                if (a + b == c) {
+                                if(a + b == c) {
                                     numOfRightTri++;
 
                                     System.out.println("^right");
@@ -106,6 +106,7 @@ public class TrianglesBasic {
 
     /**
      * returns the distance between two points squared
+     *
      * @param x1 x coordinate of p1
      * @param y1 y coordinate of p1
      * @param x2 x coordinate of p2
@@ -113,7 +114,7 @@ public class TrianglesBasic {
      * @return distance between the two coordinates
      */
     private static int distanceFormula(int x1, int y1, int x2, int y2) {
-        return ((x1 - x2)*(x1 - x2)) + ((y1 - y2)*(y1 - y2));
+        return ((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2));
     }
 
     private static boolean containsTriangle(List<Integer> x, List<Integer> y,
@@ -125,11 +126,11 @@ public class TrianglesBasic {
             List<Integer> triY = new ArrayList<>(3);
 
             triX.add(x.get(i));
-            triX.add(x.get(i+1));
-            triX.add(x.get(i+2));
+            triX.add(x.get(i + 1));
+            triX.add(x.get(i + 2));
             triY.add(y.get(i));
-            triY.add(y.get(i+1));
-            triY.add(y.get(i+2));
+            triY.add(y.get(i + 1));
+            triY.add(y.get(i + 2));
 
             if(triX.contains(x1) && triY.contains(y1)) {
                 if(triX.contains(x2) && triY.contains(y2)) {
@@ -145,7 +146,7 @@ public class TrianglesBasic {
     private static void findDup(int x1, int y1, int x2, int y2, int x3, int y3) {
         System.out.print("found triangle: (" + x1 + "," + y1 + ")(" + x2 + "," + y2 + ")(" + x3 + "," + y3 + ")");
 
-        Triangle tri = new Triangle(new Point(x1,y1), new Point(x2,y2), new Point(x3,y3));
+        Triangle tri = new Triangle(new Point(x1, y1), new Point(x2, y2), new Point(x3, y3));
         if(dups.contains(tri)) {
             System.out.println(" <-dup");
         } else {

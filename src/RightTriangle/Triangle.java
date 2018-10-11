@@ -1,7 +1,7 @@
 package RightTriangle;
 
 public class Triangle {
-    private Point a,b,c;
+    private Point a, b, c;
     private boolean right;
 
     public Triangle() {
@@ -62,7 +62,7 @@ public class Triangle {
 
     private boolean rightCheck() {
         if(isTriangle()) {
-            int a,b,c, temp;
+            int a, b, c, temp;
             c = getA().distance(getB());
 
             a = getA().distance(getC());
@@ -79,7 +79,7 @@ public class Triangle {
                 b = temp;
             }
 
-            return a+b == c;
+            return a + b == c;
         } else {
             return false;
         }
@@ -114,7 +114,7 @@ public class Triangle {
             return false;
         }
 
-        Triangle t = (Triangle)obj;
+        Triangle t = (Triangle) obj;
         return has(t.getA()) && has(t.getB()) && has(t.getC()) && t.has(getA()) && t.has(getB()) && t.has(getC());
     }
 

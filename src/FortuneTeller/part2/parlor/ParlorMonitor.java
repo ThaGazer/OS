@@ -1,11 +1,28 @@
 /*
  * Author: Justin Ritter
- * File: null.java
+ * File: ParlorMonitor.java
  * Date: 10/10/2018
  */
 package FortuneTeller.part2.parlor;
 
+import java.util.ArrayList;
+
 public class ParlorMonitor implements Parlor {
+
+    private static final String errParams = "improper capacity size";
+    private static final String errNullName = "everyone must have a name";
+
+    private ArrayList<String> names;
+    private int capacity;
+    private boolean closed = false;
+
+    public ParlorMonitor(int capacity) {
+        if(capacity < 0 || capacity >= Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(errParams);
+        }
+        this.capacity = capacity;
+        names = new ArrayList<>(capacity);
+    }
 
     /**
      * Called by fortune teller to request next patron in order by arrival.
@@ -17,7 +34,25 @@ public class ParlorMonitor implements Parlor {
      */
     @Override
     public String tellFortune() {
-        return null;
+        if(!isClosed()) {
+            synchronized(this) {
+                while(names.size() <= 0) {
+                    if(isClosed()) {
+                        return null;
+                    }
+                    try {
+                        wait();
+                    } catch(InterruptedException e) {
+                        System.err.println(e.getMessage());
+                        return null;
+                    }
+                }
+
+                return names.remove(0);
+            }
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -28,14 +63,26 @@ public class ParlorMonitor implements Parlor {
      * is closed.
      *
      * @param name name of patron
-     *
-     * @throws NullPointerException
-     *           if name is null
      * @return true if patron was added or false if the parlor was full or closed
+     * @throws NullPointerException if name is null
      */
     @Override
     public boolean newPatron(String name) {
-        return false;
+        if(!isClosed()) {
+            if(name == null) {
+                throw new NullPointerException(errNullName);
+            }
+
+            synchronized(this) {
+                if(names.size() < capacity) {
+                    names.add(name);
+                    return true;
+                }
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -45,6 +92,17 @@ public class ParlorMonitor implements Parlor {
      */
     @Override
     public void close() {
+        synchronized(this) {
+            setClosed();
+            notifyAll();
+        }
+    }
 
+    private synchronized boolean isClosed() {
+        return closed;
+    }
+
+    private void setClosed() {
+        closed = true;
     }
 }
