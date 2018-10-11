@@ -8,5 +8,6 @@ package FortuneTeller.part2.parlor;
 public class ParlorDriver {
 
     public static void main(String[] args) {
+
     }
 }

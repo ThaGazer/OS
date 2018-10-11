@@ -105,7 +105,7 @@ public class ParlorSemaphore implements Parlor {
         try {
             closeLock.acquire();
             setClosed();
-            tellerLock.notifyAll();
+            tellerLock.notify();
             closeLock.release();
         } catch(InterruptedException e) {
             System.err.println(e.getMessage());

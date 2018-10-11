@@ -94,7 +94,7 @@ public class ParlorMonitor implements Parlor {
     public void close() {
         synchronized(this) {
             setClosed();
-            notifyAll();
+            notify();
         }
     }
 
