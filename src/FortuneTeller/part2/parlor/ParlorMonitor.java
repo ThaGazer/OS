@@ -76,6 +76,7 @@ public class ParlorMonitor implements Parlor {
             synchronized(this) {
                 if(names.size() < capacity) {
                     names.add(name);
+                    notify();
                     return true;
                 }
                 return false;

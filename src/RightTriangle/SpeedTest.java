@@ -1,7 +1,5 @@
 package RightTriangle;
 
-import javafx.util.Pair;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -83,7 +81,7 @@ public class SpeedTest {
         int pointCount = 2000;
         FileWriter fileWriter = new FileWriter(new File(fileName));
         Random rnd = new Random(System.nanoTime());
-        Set<Pair<Integer, Integer>> pointSet = new HashSet<>();
+        Set<Pair<Integer,Integer>> pointSet = new HashSet<>();
 
         fileWriter.write(pointCount + "\n");
         while(pointSet.size() != pointCount) {
@@ -94,5 +92,23 @@ public class SpeedTest {
             fileWriter.write(p.getKey() + " " + p.getValue() + "\n");
         }
         fileWriter.flush();
+    }
+
+    private static class Pair<K, V> {
+        K key;
+        V value;
+
+        public Pair(K key, V val) {
+            this.key = key;
+            this.value = val;
+        }
+
+        public K getKey() {
+            return key;
+        }
+
+        public V getValue() {
+            return value;
+        }
     }
 }

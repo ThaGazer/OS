@@ -22,7 +22,7 @@ public class ParlorSemaphore implements Parlor {
     private ArrayList<String> names;
 
     public ParlorSemaphore(int capacity) {
-        if(capacity < 0 || capacity >= Integer.MAX_VALUE) {
+        if(capacity < 0) {
             throw new IllegalArgumentException(errParams);
         }
 
@@ -49,7 +49,10 @@ public class ParlorSemaphore implements Parlor {
                     tellerLock.acquire();
                 }
 
-                return names.remove(0);
+                parlorLock.acquire();
+                String name = names.remove(0);
+                parlorLock.release();
+                return name;
             } catch(InterruptedException e) {
                 System.err.println(e.getMessage());
                 return null;
@@ -83,6 +86,7 @@ public class ParlorSemaphore implements Parlor {
                 if(names.size() < capacity) {
                     names.add(name);
                     ret = true;
+                    tellerLock.release();
                 }
                 parlorLock.release();
                 return ret;
@@ -105,7 +109,7 @@ public class ParlorSemaphore implements Parlor {
         try {
             closeLock.acquire();
             setClosed();
-            tellerLock.notify();
+            tellerLock.release();
             closeLock.release();
         } catch(InterruptedException e) {
             System.err.println(e.getMessage());
