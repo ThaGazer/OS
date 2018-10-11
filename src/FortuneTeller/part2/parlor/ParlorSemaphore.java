@@ -40,15 +40,19 @@ public class ParlorSemaphore implements Parlor {
      */
     @Override
     public String tellFortune() {
+        //if shop is closed
         if(!isClosed()) {
             try {
+                //
                 while(names.size() <= 0) {
+                    //needed if no one is in the shop and the parlor recently closed
                     if(isClosed()) {
                         return null;
                     }
                     tellerLock.acquire();
                 }
 
+                //tells fortune
                 parlorLock.acquire();
                 String name = names.remove(0);
                 parlorLock.release();
@@ -75,17 +79,24 @@ public class ParlorSemaphore implements Parlor {
      */
     @Override
     public boolean newPatron(String name) {
+        //if shop closed nothing to do
         if(!isClosed()) {
+            //if name is null throw something at them
             if(name == null) {
                 throw new NullPointerException(errNullName);
             }
 
             try {
+                //attempts to enter parlor
                 parlorLock.acquire();
+
                 boolean ret = false;
+
+                //adds name to queue if parlor is below capacity
                 if(names.size() < capacity) {
                     names.add(name);
                     ret = true;
+                    //tell the teller you are here
                     tellerLock.release();
                 }
                 parlorLock.release();
@@ -116,10 +127,17 @@ public class ParlorSemaphore implements Parlor {
         }
     }
 
+    /**
+     * returns a flag if the parlor is closed or not
+     * @return closed flag
+     */
     private synchronized boolean isClosed() {
         return closed;
     }
 
+    /**
+     * Sets the closed flag
+     */
     private void setClosed() {
         closed = true;
     }

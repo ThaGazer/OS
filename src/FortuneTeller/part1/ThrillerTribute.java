@@ -223,7 +223,6 @@ public class ThrillerTribute {
                     mjCt = zombieCt = 0;
                     mjLock.release();
                     zombieLock.release(2);
-                    finishLock.release();
                 }
                 finishLock.release();
             }

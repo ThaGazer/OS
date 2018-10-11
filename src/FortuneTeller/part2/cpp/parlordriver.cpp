@@ -12,6 +12,7 @@
 #include <stdio.h>
 
 void* runTeller(void*);
+void* patronSpawner(void*);
 void* runPatron(void*);
 
 int main(int argc, char* argv[]) {
@@ -19,8 +20,10 @@ int main(int argc, char* argv[]) {
     pthread_t thread[2];
     Parlor* parlor = new Parlor();
 
+    //spawns teller thread
     pthread_create(&thread[0], NULL, &runTeller, &parlor);
-    pthread_create(&thread[1], NULL, &runPatron, &parlor);
+    //spawns patron thread
+    pthread_create(&thread[1], NULL, &patronSpawner, &parlor);
 
     for(int i = 0; i < 2; i++) {
         pthread_join(thread[i], NULL);
@@ -49,14 +52,25 @@ void* runTeller(void* par) {
     exit(0);
 }
 
+void* patronSpawner(void* parlor) {
+    int NUMTHREAD
+    pthread_t thread[NUMTHREAD];
+
+    for(int i = 0; i < NUMTHREAD; i++) {
+        pthread_create(&thread[i], NULL, &runPatron, parlor);
+    }
+
+    for(int i = 0; i < NUMTHREAD; i++) {
+        pthread_join(thread[i], NULL);
+    }
+}
+
 void* runPatron(void* par) {
     Parlor* parlor = (Parlor*)par;
 
-    for(int i = 0; i < 100; i++) {
-        if(parlor->NewPatron(to_string(i))) {
-            printf("%i took a seat in the parlor", i);
-        } else {
-            printf("%i continued on to find a new store", i);
-        }
+    if(parlor->NewPatron(to_string(i))) {
+        printf("%i took a seat in the parlor", i);
+    } else {
+        printf("%i continued on to find a new store", i);
     }
 }

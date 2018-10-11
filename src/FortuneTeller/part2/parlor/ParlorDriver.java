@@ -50,7 +50,6 @@ public class ParlorDriver {
         } catch(InterruptedException e) {
             e.printStackTrace();
         }
-        System.out.println("closing");
         parlor.close();
     }
 

@@ -5,7 +5,39 @@
  */
 package FortuneTeller.part2.dance;
 
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Semaphore;
+
 public class DanceFloorBarrier implements DanceFloor {
+
+    private Semaphore mjLock = new Semaphore(1);
+    private Semaphore zomLock = new Semaphore(2);
+    private Semaphore zomStop = new Semaphore(0);
+    private Semaphore finishLock = new Semaphore(1);
+    private CyclicBarrier wall = new CyclicBarrier(3);
+
+    private boolean mjStart = false;
+    private int zomStart = 0;
+
+    private void finish() {
+        if(finishLock.tryAcquire()) {
+            if(mjStart && zomStart == 2) {
+                mjStart = false;
+                zomStart = 0;
+                mjLock.release();
+                zomLock.release();
+                zomLock.release();
+            }
+            finishLock.release();
+        }
+    }
+
+    private void error(String errMessage) {
+        System.err.println(errMessage);
+        System.exit(1);
+    }
+
     /**
      * Called by Michael Jackson impersonator when ready to dance. This method will
      * block until the preconditions are met (i.e., two zombies and one MJ ready to
@@ -14,7 +46,13 @@ public class DanceFloorBarrier implements DanceFloor {
      */
     @Override
     public void michaelStart() {
-
+        try {
+            mjLock.acquire();
+            mjStart = true;
+            wall.await();
+        } catch(InterruptedException | BrokenBarrierException e) {
+            error(e.getMessage());
+        }
     }
 
     /**
@@ -23,7 +61,10 @@ public class DanceFloorBarrier implements DanceFloor {
      */
     @Override
     public void michaelStop() {
-
+        if(mjStart) {
+            zomStop.release();
+            zomStop.release();
+        }
     }
 
     /**
@@ -33,7 +74,13 @@ public class DanceFloorBarrier implements DanceFloor {
      */
     @Override
     public void zombieStart() {
-
+        try {
+            zomLock.acquire();
+            zomStart++;
+            wall.await();
+        } catch(InterruptedException | BrokenBarrierException e) {
+            error(e.getMessage());
+        }
     }
 
     /**
@@ -44,6 +91,13 @@ public class DanceFloorBarrier implements DanceFloor {
      */
     @Override
     public void zombieStop() {
-
+        if(zomStart != 0) {
+            try {
+                zomStop.acquire();
+                finish();
+            } catch(InterruptedException e) {
+                error(e.getMessage());
+            }
+        }
     }
 }
