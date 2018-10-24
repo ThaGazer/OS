@@ -95,8 +95,7 @@ public class FileDataSource implements DataSource {
 
         //TODO detect deadlock somehow
 
-
-        return completeRead(ByteBuffer.allocate(len), startByte, len);
+        return completeRead(startByte, len);
       }
 
       @Override
@@ -108,27 +107,40 @@ public class FileDataSource implements DataSource {
           throw new IndexOutOfBoundsException(errNegativeStart);
         }
         //TODO detect deadlock somehow
+        //TODO lock write
 
         file.write(buffer, (int)startByte, buffer.length);
       }
 
       @Override
       public void close() {
-        //TODO release transaction resources
+        //TODO completely release transaction resources?
+        try(FileChannel fc = file.getChannel()) {
+          fc.force(false);
+        } catch(IOException e) {
+          e.printStackTrace();
+        }
       }
 
-      private byte[] completeRead(ByteBuffer buff, long startByte, int len) {
+      /**
+       * Guarantees that length number of bytes will be read from the channel
+       * @param startByte starting position of read
+       * @param length number of bytes to read
+       * @return a byte[] representation of the bytes read from the channel
+       * @throws IOException if IO error
+       */
+      private byte[] completeRead(long startByte, int length) throws IOException {
+        ByteBuffer buff = ByteBuffer.allocate(length);
         FileChannel fc = file.getChannel();
-        try(FileLock fl = fc.lock(startByte, len, false)) {
+        FileLock fl = fc.lock(startByte, length, false);
 
-          //TODO finish completely reading
-          int bytesRead;
-          while((bytesRead = fc.read(buff, startByte)) < len) {
-            startByte += bytesRead;
-          }
-        } catch(IOException e) {
-          //TODO what should I do here?
+        //TODO finish completely reading
+        int bytesRead = 0;
+        while((bytesRead += fc.read(buff, startByte)) < length) {
+          startByte += bytesRead;
         }
+        fl.release();
+
         return buff.array();
       }
     };
