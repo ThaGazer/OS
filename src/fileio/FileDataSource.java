@@ -9,6 +9,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.logging.Logger;
 
 public class FileDataSource implements DataSource {
@@ -92,9 +95,8 @@ public class FileDataSource implements DataSource {
 
         //TODO detect deadlock somehow
 
-        byte[] ret = new byte[len];
-        file.read(ret, (int)startByte, len);
-        return ret;
+
+        return completeRead(ByteBuffer.allocate(len), startByte, len);
       }
 
       @Override
@@ -113,6 +115,21 @@ public class FileDataSource implements DataSource {
       @Override
       public void close() {
         //TODO release transaction resources
+      }
+
+      private byte[] completeRead(ByteBuffer buff, long startByte, int len) {
+        FileChannel fc = file.getChannel();
+        try(FileLock fl = fc.lock(startByte, len, false)) {
+
+          //TODO finish completely reading
+          int bytesRead;
+          while((bytesRead = fc.read(buff, startByte)) < len) {
+            startByte += bytesRead;
+          }
+        } catch(IOException e) {
+          //TODO what should I do here?
+        }
+        return buff.array();
       }
     };
   }
