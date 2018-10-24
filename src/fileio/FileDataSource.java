@@ -94,7 +94,7 @@ public class FileDataSource implements DataSource {
         }
 
         //TODO detect deadlock somehow
-
+        //TODO log reads
         return completeRead(startByte, len);
       }
 
@@ -107,9 +107,8 @@ public class FileDataSource implements DataSource {
           throw new IndexOutOfBoundsException(errNegativeStart);
         }
         //TODO detect deadlock somehow
-        //TODO lock write
-
-        file.write(buffer, (int)startByte, buffer.length);
+        //TODO log writes
+        completeWrite(buffer, startByte);
       }
 
       @Override
@@ -123,25 +122,40 @@ public class FileDataSource implements DataSource {
       }
 
       /**
-       * Guarantees that length number of bytes will be read from the channel
-       * @param startByte starting position of read
+       * Guaranteed to read length number of bytes from channel
+       * @param startPosition starting position of read
        * @param length number of bytes to read
        * @return a byte[] representation of the bytes read from the channel
        * @throws IOException if IO error
        */
-      private byte[] completeRead(long startByte, int length) throws IOException {
+      private byte[] completeRead(long startPosition, int length) throws IOException {
         ByteBuffer buff = ByteBuffer.allocate(length);
         FileChannel fc = file.getChannel();
-        FileLock fl = fc.lock(startByte, length, false);
 
-        //TODO finish completely reading
-        int bytesRead = 0;
-        while((bytesRead += fc.read(buff, startByte)) < length) {
-          startByte += bytesRead;
+        //lock channel from startPosition to startPosition+length with an exclusive lock
+        FileLock fl = fc.lock(startPosition, length, false);
+        while(buff.hasRemaining()) {
+          startPosition += fc.write(buff, startPosition);
         }
         fl.release();
 
         return buff.array();
+      }
+
+      /**
+       * Guaranteed to write buffer.length() to channel
+       * @param buffer buffer to write to channel
+       * @param startPosition starting position in the channel
+       */
+      private void completeWrite(byte[] buffer, long startPosition) throws IOException {
+        FileChannel fc = file.getChannel();
+        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+
+        FileLock fl = fc.lock(startPosition, buffer.length, false);
+        while(byteBuffer.hasRemaining()) {
+          startPosition += fc.write(byteBuffer, startPosition);
+        }
+        fl.release();
       }
     };
   }
@@ -151,7 +165,7 @@ public class FileDataSource implements DataSource {
     if(file.getFD().valid()) {
       return file.length();
     }
-    return 0;
+    return 0L;
   }
 
   @Override
