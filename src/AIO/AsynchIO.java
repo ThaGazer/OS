@@ -105,10 +105,7 @@ public class AsynchIO {
         if(!arr[2].matches(regx_Num1)) {
             return false;
         }
-        if(!arr[3].matches(regx_Num1)) {
-            return false;
-        }
-        return true;
+      return arr[3].matches(regx_Num1);
     }
 
     private static void setup_logger() throws IOException {

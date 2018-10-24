@@ -8,7 +8,7 @@ public class ThreadedMonteCarlo {
     private static String[] lines;
     private static int centX = 0, centY = 0, rad = 1;
 
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
+    public static void main(String[] args) {
         if(args.length != 2) {
             System.err.println("incorrect number of parameter");
             throw new IllegalArgumentException();

@@ -15,7 +15,7 @@ public class SpeedTest {
     private static int loopCount;
     private static String fileName;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         handleCmdLine(args);
         //fillAFile(fileName);
 

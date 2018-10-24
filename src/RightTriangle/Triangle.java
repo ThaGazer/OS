@@ -54,10 +54,7 @@ public class Triangle {
         if(getA().equals(getB()) || getA().equals(getC()) || getB().equals(getC())) {
             return false;
         }
-        if(getA().isZeroSlope(getB(), getC())) {
-            return false;
-        }
-        return true;
+      return !getA().isZeroSlope(getB(), getC());
     }
 
     private boolean rightCheck() {
