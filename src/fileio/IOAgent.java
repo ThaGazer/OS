@@ -10,14 +10,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 public class IOAgent implements AutoCloseable {
 
   //error messages
   private static final String errUsage = "Usage: <filename>";
-  private static final String errExceptionLimit = "The Reasonable Exception limit was reached";
   private static final String errThreadJoin = "error while joining threads";
 
   //console messages
@@ -29,17 +27,21 @@ public class IOAgent implements AutoCloseable {
   //class constants
   private static final int BOUND = 5;
   private static final int BUFFERBOUND = 10;
-  private static final int EXCEPTIONLIMIT = 20;
 
   //class member variables
   private static Logger logger = Logger.getLogger(IOAgent.class.getPackageName());
   private FileDataSource dataSource;
   private ArrayList<Thread> threads = new ArrayList<>();
   private Random rnd = new Random(System.nanoTime());
-  private int exceptionCounter = 0;
+  //a sort of bulk rate if any transaction call throws an exception
 
   public IOAgent(String file) throws IOException {
     setFile(file);
+
+    logger.setUseParentHandlers(false);
+    ConsoleHandler console = new ConsoleHandler();
+    console.setLevel(Level.SEVERE);
+    logger.addHandler(console);
   }
 
   public static void main(String[] args) {
@@ -125,7 +127,6 @@ public class IOAgent implements AutoCloseable {
         System.exit(1);
       } catch(Exception e) {
         logger.log(Level.WARNING, e.getMessage(), e);
-        exceptionCounter++;
       }
     }
     transaction.close();
