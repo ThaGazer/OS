@@ -97,11 +97,11 @@ public class IOAgent implements AutoCloseable {
     Transaction transaction = dataSource.newTransaction();
     for(int i = 0; i < numOp; i++) {
       try {
-        long offset = nextLong(rnd, dataSource.getLength());
+        long offset = nextLong(rnd, (dataSource.getLength()-BUFFERBOUND));
         boolean typeOp = rnd.nextBoolean(); /*True: read operation False: write operation*/
 
         if(typeOp) {
-          byte[] readBytes = transaction.read(0, BUFFERBOUND);
+          byte[] readBytes = transaction.read(offset, BUFFERBOUND);
           logger.log(Level.INFO, msgRead + offset + ": " + Arrays.toString(readBytes));
 
         } else {

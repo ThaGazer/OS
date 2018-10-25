@@ -11,6 +11,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,8 +40,8 @@ public class FileDataSource implements DataSource {
    * Construct byte source
    *
    * @param fileIn file containing bytes
-   * @param log logger to track operations.
-   * @throws NullPointerException  if given file or log is null
+   * @param log    logger to track operations.
+   * @throws NullPointerException if given file or log is null
    */
   public FileDataSource(File fileIn, Logger log) throws IOException {
     setLogger(log); /*always set the logger before anything*/
@@ -51,8 +52,8 @@ public class FileDataSource implements DataSource {
    * Construct byte source
    *
    * @param fileName filename containing bytes
-   * @param log logger to track operations
-   * @throws NullPointerException  if given filename or log is null
+   * @param log      logger to track operations
+   * @throws NullPointerException if given filename or log is null
    */
   public FileDataSource(String fileName, Logger log) throws IOException {
     this(new File(fileName), log);
@@ -76,7 +77,7 @@ public class FileDataSource implements DataSource {
    * file setter
    *
    * @param fileIn file containing bytes
-   * @throws NullPointerException  if given file is null
+   * @throws NullPointerException if given file is null
    */
   private void setFile(File fileIn) throws IOException {
     if(fileIn == null) {
@@ -91,10 +92,13 @@ public class FileDataSource implements DataSource {
 
   @Override
   public Transaction newTransaction() {
+
+    ArrayList<FileLock> fileLocks = new ArrayList<>();
+
     return new Transaction() {
       @Override
       public byte[] read(long startByte, int length) throws IOException {
-        if(startByte + length > getLength()) {
+        if(startByte + length > file.getChannel().size()) {
           throw new IndexOutOfBoundsException(errOverflow +
               "Position=" + startByte + " Length=" + length + " FileSize=" + getLength());
         }
@@ -129,6 +133,10 @@ public class FileDataSource implements DataSource {
         try {
           FileChannel fc = file.getChannel();
           fc.force(true);
+
+          for(FileLock fl : fileLocks) {
+            fl.release();
+          }
         } catch(IOException e) {
           e.printStackTrace();
         }
@@ -142,23 +150,13 @@ public class FileDataSource implements DataSource {
        * @throws IOException if IO error
        */
       private byte[] completeRead(long startPosition, int length) throws IOException {
-        byte[] buffer = new byte[length];
+        ByteBuffer buffer = ByteBuffer.allocate(length);
         FileChannel fc = file.getChannel();
 
-        //lock channel from startPosition to startPosition+length with an exclusive lock
-        FileLock fl = fc.tryLock(startPosition, length, true);
-        if(fl.overlaps(startPosition, length)) {
+        partialLock(fc, startPosition, length);
 
-        }
-        try {
-          file.read(buffer, (int) startPosition, buffer.length);
-        } catch(IndexOutOfBoundsException e) {
-          throw new IndexOutOfBoundsException("Position=" + startPosition +
-              " Length=" + length + " FileSize=" + getLength());
-        }
-        fl.release();
-
-        return buffer;
+        fc.read(buffer, (int)startPosition);
+        return buffer.array();
       }
 
       /**
@@ -170,12 +168,49 @@ public class FileDataSource implements DataSource {
         FileChannel fc = file.getChannel();
 
         //lock channel from startPosition to startPosition+buffer.length with an exclusive lock
-        FileLock fl = fc.lock(startPosition, startPosition, false);
+        //FileLock fl = fc.lock(startPosition, buffer.position(), false);
+
+        partialLock(fc, startPosition, buffer.position());
         while(buffer.hasRemaining()) {
           fc.write(buffer, startPosition);
         }
         fc.force(false);
-        fl.release();
+        //fl.release();
+      }
+
+      /**
+       * Produces a lock on the channel from startPosition to startPosition + length. If there already is a lock
+       * it will try to produce a partial lock on the remaining bytes out of the original lock
+       * @param fc the FileChannel to lock on
+       * @param startPosition the starting position of the lock
+       * @param length how long the lock is
+       * @throws IOException if IO error
+       */
+      private void partialLock(FileChannel fc, long startPosition, int length) throws IOException {
+        boolean foundOverlap = false;
+
+        //search for a previous lock that overlaps
+        for(FileLock fl : fileLocks) {
+          if(fl.overlaps(startPosition, length)) {
+            foundOverlap = true;
+
+            //if this position is less than fl.position
+            if(startPosition < fl.position()) {
+              //lock over the extra beginning
+              fileLocks.add(fc.lock(startPosition, (fl.position() - startPosition), false));
+            }
+            //if this range is greater than fl's range
+            if((startPosition + length) > (fl.position() + fl.size())) {
+              //lock over the extra ending
+              fileLocks.add(fc.lock((fl.position() + fl.size()),
+                  (startPosition + length) - (fl.position() + fl.size()), false));
+            }
+          }
+        }
+
+        if(!foundOverlap) {
+          fileLocks.add(fc.lock(startPosition, length, false));
+        }
       }
     };
   }
