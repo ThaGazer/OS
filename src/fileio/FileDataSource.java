@@ -6,22 +6,28 @@
 package fileio;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class FileDataSource implements DataSource {
 
   private static final String RW = "rw";
 
+  //error messages
   private static final String errNullBuffer = "Buffer cannot be null";
-  private static final String errNegativeStart = "Start index cannot be negative";
-  private static final String errNegativeLen = "Length cannot be negative";
-  private static final String errOverflow = "Bounds exceed the buffer length";
+  private static final String errNegativeStart = "Start index cannot be negative: ";
+  private static final String errNegativeLen = "Length cannot be negative: ";
+  private static final String errOverflow = "Bounds exceed the buffer length: ";
+
+  //console messages
+  private static final String msgFileCreation = "Created file: ";
+  //private static final String msgRead = "read bytes: ";
+  //private static final String msgWrite = "writing bytes: ";
 
   private static Logger logger;
 
@@ -31,40 +37,25 @@ public class FileDataSource implements DataSource {
    * Construct byte source
    *
    * @param fileIn file containing bytes
-   * @param log    logger to track operations.
-   * @throws FileNotFoundException if given file is not found
+   * @param log logger to track operations.
    * @throws NullPointerException  if given file or log is null
    */
-  public FileDataSource(File fileIn, Logger log) throws FileNotFoundException {
+  public FileDataSource(File fileIn, Logger log) throws IOException {
+    setLogger(log); /*always set the logger before anything*/
     setFile(fileIn);
-    setLogger(log);
   }
 
   /**
    * Construct byte source
    *
    * @param fileName filename containing bytes
-   * @param log      logger to track operations
-   * @throws FileNotFoundException if given filename is not found
+   * @param log logger to track operations
    * @throws NullPointerException  if given filename or log is null
    */
-  public FileDataSource(String fileName, Logger log) throws FileNotFoundException {
+  public FileDataSource(String fileName, Logger log) throws IOException {
     this(new File(fileName), log);
   }
 
-  /**
-   * file setter
-   *
-   * @param fileIn file containing bytes
-   * @throws FileNotFoundException if given file is not found
-   * @throws NullPointerException  if given file is null
-   */
-  private void setFile(File fileIn) throws FileNotFoundException {
-    if(fileIn == null) {
-      throw new NullPointerException();
-    }
-    file = new RandomAccessFile(fileIn, RW);
-  }
 
   /**
    * logger setter
@@ -79,23 +70,41 @@ public class FileDataSource implements DataSource {
     logger = log;
   }
 
+  /**
+   * file setter
+   *
+   * @param fileIn file containing bytes
+   * @throws NullPointerException  if given file is null
+   */
+  private void setFile(File fileIn) throws IOException {
+    if(fileIn == null) {
+      throw new NullPointerException();
+    }
+    if(fileIn.createNewFile()) {
+      logger.log(Level.INFO, msgFileCreation + fileIn.getName());
+    }
+
+    file = new RandomAccessFile(fileIn, RW);
+  }
+
   @Override
   public Transaction newTransaction() {
     return new Transaction() {
       @Override
-      public byte[] read(long startByte, int len) throws IOException {
-        if(startByte + len > getLength()) {
-          throw new IndexOutOfBoundsException(errOverflow);
+      public byte[] read(long startByte, int length) throws IOException {
+        if(startByte + length > getLength()) {
+          throw new IndexOutOfBoundsException(errOverflow +
+              "Position=" + startByte + " Length=" + length + " FileSize=" + getLength());
         }
         if(startByte < 0) {
-          throw new IndexOutOfBoundsException(errNegativeStart);
-        } else if(len < 0) {
-          throw new IndexOutOfBoundsException(errNegativeLen);
+          throw new IndexOutOfBoundsException(errNegativeStart + startByte);
+        } else if(length < 0) {
+          throw new IndexOutOfBoundsException(errNegativeLen + length);
         }
 
         //TODO detect deadlock somehow
-        //TODO log reads
-        return completeRead(startByte, len);
+
+        return completeRead(startByte, length);
       }
 
       @Override
@@ -107,15 +116,15 @@ public class FileDataSource implements DataSource {
           throw new IndexOutOfBoundsException(errNegativeStart);
         }
         //TODO detect deadlock somehow
-        //TODO log writes
-        completeWrite(buffer, startByte);
+
+
+        completeWrite(ByteBuffer.wrap(buffer), startByte);
       }
 
       @Override
       public void close() {
-        //TODO completely release transaction resources?
         try(FileChannel fc = file.getChannel()) {
-          fc.force(false);
+          fc.force(true);
         } catch(IOException e) {
           e.printStackTrace();
         }
@@ -129,17 +138,23 @@ public class FileDataSource implements DataSource {
        * @throws IOException if IO error
        */
       private byte[] completeRead(long startPosition, int length) throws IOException {
-        ByteBuffer buff = ByteBuffer.allocate(length);
+        byte[] buffer = new byte[length];
         FileChannel fc = file.getChannel();
 
         //lock channel from startPosition to startPosition+length with an exclusive lock
-        FileLock fl = fc.lock(startPosition, length, false);
-        while(buff.hasRemaining()) {
-          startPosition += fc.write(buff, startPosition);
+        FileLock fl = fc.tryLock(startPosition, length, true);
+        if(fl.overlaps(startPosition, length)) {
+
+        }
+        try {
+          file.read(buffer, (int) startPosition, buffer.length);
+        } catch(IndexOutOfBoundsException e) {
+          throw new IndexOutOfBoundsException("Position=" + startPosition +
+              " Length=" + length + " FileSize=" + getLength());
         }
         fl.release();
 
-        return buff.array();
+        return buffer;
       }
 
       /**
@@ -147,14 +162,15 @@ public class FileDataSource implements DataSource {
        * @param buffer buffer to write to channel
        * @param startPosition starting position in the channel
        */
-      private void completeWrite(byte[] buffer, long startPosition) throws IOException {
+      private void completeWrite(ByteBuffer buffer, long startPosition) throws IOException {
         FileChannel fc = file.getChannel();
-        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
 
-        FileLock fl = fc.lock(startPosition, buffer.length, false);
-        while(byteBuffer.hasRemaining()) {
-          startPosition += fc.write(byteBuffer, startPosition);
+        //lock channel from startPosition to startPosition+buffer.length with an exclusive lock
+        FileLock fl = fc.lock(startPosition, startPosition, false);
+        while(buffer.hasRemaining()) {
+          fc.write(buffer, startPosition);
         }
+        fc.force(true);
         fl.release();
       }
     };
