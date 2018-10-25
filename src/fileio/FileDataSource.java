@@ -26,6 +26,8 @@ public class FileDataSource implements DataSource {
 
   //console messages
   private static final String msgFileCreation = "Created file: ";
+  private static final String msgCloseFileDataSource = "Closing FileDataSource";
+  private static final String msgCloseTransaction = "Closing Transaction";
   //private static final String msgRead = "read bytes: ";
   //private static final String msgWrite = "writing bytes: ";
 
@@ -123,7 +125,9 @@ public class FileDataSource implements DataSource {
 
       @Override
       public void close() {
-        try(FileChannel fc = file.getChannel()) {
+        logger.info(msgCloseTransaction);
+        try {
+          FileChannel fc = file.getChannel();
           fc.force(true);
         } catch(IOException e) {
           e.printStackTrace();
@@ -170,7 +174,7 @@ public class FileDataSource implements DataSource {
         while(buffer.hasRemaining()) {
           fc.write(buffer, startPosition);
         }
-        fc.force(true);
+        fc.force(false);
         fl.release();
       }
     };
@@ -178,14 +182,12 @@ public class FileDataSource implements DataSource {
 
   @Override
   public long getLength() throws IOException {
-    if(file.getFD().valid()) {
-      return file.length();
-    }
-    return 0L;
+    return file.length();
   }
 
   @Override
   public void close() throws IOException {
+    logger.info(msgCloseFileDataSource);
     file.close();
   }
 }

@@ -20,9 +20,10 @@ public class IOAgent implements AutoCloseable {
   private static final String errThreadJoin = "error while joining threads";
 
   //console messages
+  private static final String msgCloseIOAgent = "Closing IOAgent";
   private static final String msgNewTransaction = "New Transaction: Operations=";
-  private static final String msgRead = "read bytes: ";
-  private static final String msgWrite = "writing bytes: ";
+  private static final String msgRead = "reading bytes from ";
+  private static final String msgWrite = "writing bytes to ";
 
   //class constants
   private static final int BOUND = 5;
@@ -33,7 +34,8 @@ public class IOAgent implements AutoCloseable {
   private static Logger logger = Logger.getLogger(IOAgent.class.getPackageName());
   private FileDataSource dataSource;
   private ArrayList<Thread> threads = new ArrayList<>();
-
+  private int exceptionCounter = 0;
+  Random rnd = new Random(System.nanoTime());
 
   public IOAgent(String file) throws IOException {
     setFile(file);
@@ -54,14 +56,12 @@ public class IOAgent implements AutoCloseable {
 
   public void go() {
     threads.add(new Thread(() -> {
-      int exceptionCounter = 0;
-      Random rnd = new Random(System.nanoTime());
 
       while(true) {
         try {
           int numOp = rnd.nextInt(BOUND) + 1;
           logger.info(msgNewTransaction + numOp);
-          doSomething(numOp, rnd);
+          doSomething(numOp);
         } catch(Exception e) {
           logger.log(Level.WARNING, e.getMessage(), e);
         }
@@ -92,26 +92,31 @@ public class IOAgent implements AutoCloseable {
    *
    * @throws IOException if DataSource error
    */
-  private void doSomething(int numOp, Random rnd) throws IOException {
-    rnd = new Random(System.nanoTime());
+  private void doSomething(int numOp) throws IOException {
 
     Transaction transaction = dataSource.newTransaction();
     for(int i = 0; i < numOp; i++) {
-      long offset = nextLong(rnd, dataSource.getLength());
-      boolean typeOp = rnd.nextBoolean(); /*True: read operation False: write operation*/
-
       try {
+        long offset = nextLong(rnd, dataSource.getLength());
+        boolean typeOp = rnd.nextBoolean(); /*True: read operation False: write operation*/
+
         if(typeOp) {
-          byte[] readBytes = transaction.read(offset, BUFFERBOUND);
-          logger.log(Level.INFO, msgRead, Arrays.toString(readBytes));
+          byte[] readBytes = transaction.read(0, BUFFERBOUND);
+          logger.log(Level.INFO, msgRead + offset + ": " + Arrays.toString(readBytes));
 
         } else {
           byte[] writeBytes = nextSection();
-          logger.log(Level.INFO, msgWrite, Arrays.toString(writeBytes));
+          logger.log(Level.INFO, msgWrite + offset + ": " + Arrays.toString(writeBytes));
           transaction.write(writeBytes, offset);
         }
       } catch(Exception e) {
-        logger.log(Level.WARNING, e.getMessage(), e.getCause());
+        logger.log(Level.WARNING, e.getMessage(), e);
+        exceptionCounter++;
+
+        if(exceptionCounter >= EXCEPTIONLIMIT) {
+          logger.log(Level.SEVERE, errExceptionLimit);
+          System.exit(1);
+        }
       }
     }
     transaction.close();
@@ -124,7 +129,9 @@ public class IOAgent implements AutoCloseable {
    */
   private byte[] nextSection() {
     byte[] ret = new byte[BUFFERBOUND];
-    new Random(System.nanoTime()).nextBytes(ret);
+    for(int i = 0; i < BUFFERBOUND; i++) {
+      ret[i] = (byte) (' ' + rnd.nextInt(95));
+    }
     return ret;
   }
 
@@ -157,6 +164,7 @@ public class IOAgent implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
+
     for(Thread t : threads) {
       try {
         t.join();
@@ -164,6 +172,7 @@ public class IOAgent implements AutoCloseable {
         logger.log(Level.SEVERE, errThreadJoin, e);
       }
     }
+    logger.info(msgCloseIOAgent);
     dataSource.close();
   }
 }
