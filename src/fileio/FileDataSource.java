@@ -124,7 +124,7 @@ public class FileDataSource implements DataSource {
         //TODO detect deadlock somehow
 
 
-        completeWrite(ByteBuffer.wrap(buffer), startByte);
+        completeWrite(buffer, startByte);
       }
 
       @Override
@@ -153,9 +153,12 @@ public class FileDataSource implements DataSource {
         ByteBuffer buffer = ByteBuffer.allocate(length);
         FileChannel fc = file.getChannel();
 
-        partialLock(fc, startPosition, length);
+        //TODO is partial locking even needed?
+        //partialLock(fc, startPosition, length);
 
-        fc.read(buffer, (int)startPosition);
+        FileLock fl = fc.lock(startPosition, length, true);
+        fc.read(buffer, fl.size());
+        fl.release();
         return buffer.array();
       }
 
@@ -164,18 +167,18 @@ public class FileDataSource implements DataSource {
        * @param buffer buffer to write to channel
        * @param startPosition starting position in the channel
        */
-      private void completeWrite(ByteBuffer buffer, long startPosition) throws IOException {
+      private void completeWrite(byte[] buffer, long startPosition) throws IOException {
         FileChannel fc = file.getChannel();
 
         //lock channel from startPosition to startPosition+buffer.length with an exclusive lock
-        //FileLock fl = fc.lock(startPosition, buffer.position(), false);
+        FileLock fl = fc.lock(startPosition, buffer.length, false);
 
-        partialLock(fc, startPosition, buffer.position());
-        while(buffer.hasRemaining()) {
-          fc.write(buffer, startPosition);
+        //partialLock(fc, startPosition, buffer.position());
+        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+        while(byteBuffer.hasRemaining()) {
+          fc.write(byteBuffer, startPosition);
         }
-        fc.force(false);
-        //fl.release();
+        fl.release();
       }
 
       /**
@@ -197,19 +200,19 @@ public class FileDataSource implements DataSource {
             //if this position is less than fl.position
             if(startPosition < fl.position()) {
               //lock over the extra beginning
-              fileLocks.add(fc.lock(startPosition, (fl.position() - startPosition), false));
+              fileLocks.add(fc.lock(startPosition, (fl.position() - startPosition), true));
             }
             //if this range is greater than fl's range
             if((startPosition + length) > (fl.position() + fl.size())) {
               //lock over the extra ending
               fileLocks.add(fc.lock((fl.position() + fl.size()),
-                  (startPosition + length) - (fl.position() + fl.size()), false));
+                  (startPosition + length) - (fl.position() + fl.size()), true));
             }
           }
         }
 
         if(!foundOverlap) {
-          fileLocks.add(fc.lock(startPosition, length, false));
+          fileLocks.add(fc.lock(startPosition, length, true));
         }
       }
     };

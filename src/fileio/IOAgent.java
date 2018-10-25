@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,8 +35,8 @@ public class IOAgent implements AutoCloseable {
   private static Logger logger = Logger.getLogger(IOAgent.class.getPackageName());
   private FileDataSource dataSource;
   private ArrayList<Thread> threads = new ArrayList<>();
+  private Random rnd = new Random(System.nanoTime());
   private int exceptionCounter = 0;
-  Random rnd = new Random(System.nanoTime());
 
   public IOAgent(String file) throws IOException {
     setFile(file);
@@ -89,18 +90,18 @@ public class IOAgent implements AutoCloseable {
 
   /**
    * does something
-   *
-   * @throws IOException if DataSource error
    */
-  private void doSomething(int numOp) throws IOException {
-
+  private void doSomething(int numOp) {
     Transaction transaction = dataSource.newTransaction();
     for(int i = 0; i < numOp; i++) {
       try {
-        long offset = nextLong(rnd, (dataSource.getLength()-BUFFERBOUND));
+        long offset = dataSource.getLength() == 0 ? 0 : ThreadLocalRandom.current().nextLong(dataSource.getLength());
         boolean typeOp = rnd.nextBoolean(); /*True: read operation False: write operation*/
 
         if(typeOp) {
+          if(offset+BUFFERBOUND >= dataSource.getLength()) {
+            offset = dataSource.getLength() - offset;
+          }
           byte[] readBytes = transaction.read(offset, BUFFERBOUND);
           logger.log(Level.INFO, msgRead + offset + ": " + Arrays.toString(readBytes));
 
@@ -133,33 +134,6 @@ public class IOAgent implements AutoCloseable {
       ret[i] = (byte) (' ' + rnd.nextInt(95));
     }
     return ret;
-  }
-
-  /**
-   * generates a random long number between 0 and bound
-   *
-   * @param random random generator
-   * @param bound  bound for the number
-   * @return a randomly generated long number
-   */
-  private long nextLong(Random random, long bound) {
-    if(bound < 0) {
-      throw new IllegalArgumentException("n must be positive");
-    }
-    if(bound == 0) {
-      return 0;
-    }
-
-    if((bound & -bound) == bound) { // i.e., n is a power of 2
-      return ((bound * random.nextLong()) >> 31);
-    }
-
-    long bits, val;
-    do {
-      bits = (random.nextLong() << 1) >>> 1;
-      val = bits % bound;
-    } while(bits - val + (bound - 1) < 0L);
-    return val;
   }
 
   @Override
