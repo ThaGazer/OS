@@ -5,13 +5,15 @@
  */
 package fileio;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import javax.crypto.SealedObject;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,13 +26,14 @@ public class FileDataSource implements DataSource {
   private static final String errNegativeStart = "Start index cannot be negative: ";
   private static final String errNegativeLen = "Length cannot be negative: ";
   private static final String errOverflow = "Bounds exceed the buffer length: ";
+  private static final String errDeadlock = "Potential for deadlock";
 
   //console messages
   private static final String msgFileCreation = "Created file: ";
   private static final String msgCloseFileDataSource = "Closing FileDataSource";
   private static final String msgCloseTransaction = "Closing Transaction";
-  //private static final String msgRead = "read bytes: ";
-  //private static final String msgWrite = "writing bytes: ";
+
+  private static final String DeadlockFileName = "src/fileio/lockTransfer.txt";
 
   private static Logger logger;
 
@@ -92,10 +95,10 @@ public class FileDataSource implements DataSource {
 
   @Override
   public Transaction newTransaction() {
-
-    ArrayList<FileLock> fileLocks = new ArrayList<>();
-
     return new Transaction() {
+      ArrayList<FileLock> fileLocks = new ArrayList<>();
+      private boolean isClosed = false;
+
       @Override
       public byte[] read(long startByte, int length) throws IOException {
         if(startByte + length > file.getChannel().size()) {
@@ -108,7 +111,10 @@ public class FileDataSource implements DataSource {
           throw new IndexOutOfBoundsException(errNegativeLen + length);
         }
 
-        //TODO detect deadlock somehow
+        //deadlock check
+/*        if(deadlockDetection()) {
+          throw new DeadlockDetectedException(errDeadlock);
+        }*/
 
         return completeRead(startByte, length);
       }
@@ -121,8 +127,11 @@ public class FileDataSource implements DataSource {
         if(startByte < 0) {
           throw new IndexOutOfBoundsException(errNegativeStart);
         }
-        //TODO detect deadlock somehow
 
+        //deadlock check
+/*        if(deadlockDetection()) {
+          throw new DeadlockDetectedException(errDeadlock);
+        }*/
 
         completeWrite(buffer, startByte);
       }
@@ -130,6 +139,8 @@ public class FileDataSource implements DataSource {
       @Override
       public void close() {
         logger.info(msgCloseTransaction);
+        isClosed = true;
+
         try {
           FileChannel fc = file.getChannel();
           fc.force(true);
@@ -153,12 +164,10 @@ public class FileDataSource implements DataSource {
         ByteBuffer buffer = ByteBuffer.allocate(length);
         FileChannel fc = file.getChannel();
 
-        //TODO is partial locking even needed?
-        //partialLock(fc, startPosition, length);
+        //lock channel from startPosition to startPosition+buffer.length with a shared lock
+        partialLock(fc, startPosition, length, true);
 
-        FileLock fl = fc.lock(startPosition, length, true);
-        fc.read(buffer, fl.size());
-        fl.release();
+        fc.read(buffer, length);
         return buffer.array();
       }
 
@@ -171,14 +180,12 @@ public class FileDataSource implements DataSource {
         FileChannel fc = file.getChannel();
 
         //lock channel from startPosition to startPosition+buffer.length with an exclusive lock
-        FileLock fl = fc.lock(startPosition, buffer.length, false);
+        partialLock(fc, startPosition, buffer.length, false);
 
-        //partialLock(fc, startPosition, buffer.position());
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
         while(byteBuffer.hasRemaining()) {
           fc.write(byteBuffer, startPosition);
         }
-        fl.release();
       }
 
       /**
@@ -189,31 +196,80 @@ public class FileDataSource implements DataSource {
        * @param length how long the lock is
        * @throws IOException if IO error
        */
-      private void partialLock(FileChannel fc, long startPosition, int length) throws IOException {
+      private void partialLock(FileChannel fc, long startPosition, int length, boolean shared) throws IOException {
         boolean foundOverlap = false;
 
-        //search for a previous lock that overlaps
-        for(FileLock fl : fileLocks) {
-          if(fl.overlaps(startPosition, length)) {
-            foundOverlap = true;
+        try {
+          //search for a previous lock that overlaps
+          fileLocks.sort((o1, o2) -> (int)(o1.position() - o2.position()));
 
-            //if this position is less than fl.position
-            if(startPosition < fl.position()) {
-              //lock over the extra beginning
-              fileLocks.add(fc.lock(startPosition, (fl.position() - startPosition), true));
-            }
-            //if this range is greater than fl's range
-            if((startPosition + length) > (fl.position() + fl.size())) {
-              //lock over the extra ending
-              fileLocks.add(fc.lock((fl.position() + fl.size()),
-                  (startPosition + length) - (fl.position() + fl.size()), true));
+          ArrayList<FileLock> tempList = new ArrayList<>();
+          for(int i = 0; i < fileLocks.size(); i++) {
+            FileLock fl = fileLocks.get(i);
+            if(fl.overlaps(startPosition, length)) {
+              foundOverlap = true;
+
+              //if this position is less than fl.position else if this range is greater than fl's range
+              if(startPosition < fl.position()) {
+                //lock over the extra beginning
+                tempList.add(fc.lock(startPosition, (fl.position() - startPosition)-2, shared));
+              } else if((startPosition + length) > (fl.position() + fl.size())) {
+                long end = (startPosition + length) - ((fl.position() + fl.size()) + 1);
+
+                if(i < fileLocks.size()-1) {
+                  if(end >= fileLocks.get(i + 1).position()) {
+                    end = fileLocks.get(i + 1).position() - 1;
+                  }
+                }
+                //lock over the extra ending
+                tempList.add(fc.lock((fl.position() + fl.size()) + 1, end, shared));
+              }
             }
           }
-        }
+          fileLocks.addAll(tempList);
 
-        if(!foundOverlap) {
-          fileLocks.add(fc.lock(startPosition, length, true));
+          if(!foundOverlap) {
+            fileLocks.add(fc.lock(startPosition, length, shared));
+          }
+        } catch(OverlappingFileLockException ofle) {
+          throw new IOException("Start: " + startPosition +
+              " Length: " + length + Arrays.toString(fileLocks.toArray()));
         }
+      }
+
+      /**
+       * An attempt to discover deadlock between processes
+       * @return if deadlock is possible
+       * @throws IOException if IO error
+       */
+      private boolean deadlockDetection() throws IOException {
+        File transferFile = new File(DeadlockFileName);
+
+        //create a new transfer lock file if it doesn't already exist
+        if(transferFile.createNewFile()) {
+          logger.info(msgFileCreation + DeadlockFileName);
+        }
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(transferFile));
+        ArrayList<Long> lockPos = new ArrayList<>();
+        for(FileLock fl : fileLocks) {
+          lockPos.add(fl.position());
+        }
+        out.writeObject(lockPos);
+
+
+        try(ObjectInputStream in = new ObjectInputStream(new FileInputStream(transferFile))) {
+          ArrayList<Long> locksIn = new ArrayList<>((ArrayList<Long>)in.readObject());
+
+            //if locksIn contains any lock from fileLocks and we haven't close yet possible deadlock
+            for(FileLock fl : fileLocks) {
+              if(locksIn.contains(fl.position()) && !isClosed) {
+                return true;
+              }
+            }
+        } catch(Exception e) {
+          logger.log(Level.WARNING, e.getMessage(), e);
+        }
+        return false;
       }
     };
   }
