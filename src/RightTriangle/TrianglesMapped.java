@@ -14,6 +14,7 @@ public class TrianglesMapped {
   private static final String errUsage = "Usage: <filename> <thread count>";
   private static final String errFNF = "Could not find file: ";
   private static final String errThreadJoin = "Could not join thread: ";
+  private static final String errSem = "Could not acquire semaphore: ";
   private static final String errFileFormat = "There are problems with the way the file is formatted";
   private static final String errFileOverflow = "too many point found";
   private static final String errFileUnderflow = "not enough points in file";
@@ -76,30 +77,29 @@ public class TrianglesMapped {
       int finalAjustedWorkLoad = ajustedWorkLoad;
       int finalStartLoc = startLoc;
       Thread thread = new Thread(() -> {
-        int totalTri = 0;
         for(int j = finalStartLoc; j < finalStartLoc + finalAjustedWorkLoad; j++) {
           for(int k = 0; k < pointList.size(); k++) {
             for(int l = 0; l < pointList.size(); l++) {
               if(j != k && j != l && k != l) {
-                String out = "";
                 Triangle t = new Triangle(pointList.get(j), pointList.get(k), pointList.get(l));
-                out += t.toString();
-                totalTri++;
+                //System.out.println(t);
+                try {
+                  sem.acquire();
+                } catch(InterruptedException e) {
+                  System.err.println(errSem + e.getMessage());
+                  System.exit(1);
+                }
                 if(!rightTriangles.contains(t)) {
                   if(t.isRight()) {
                     totalRightTriangles.getAndIncrement();
                     rightTriangles.add(t);
-                    out += "<- right";
                   }
-                } else {
-                  out += "<-dup";
                 }
-                System.out.println(out);
+                sem.release();
               }
             }
           }
         }
-        //System.out.println(Thread.currentThread().getName() + " " + totalTri);
       });
       thread.start();
       threadList.add(thread);
