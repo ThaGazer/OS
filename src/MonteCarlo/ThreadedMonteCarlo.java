@@ -27,7 +27,7 @@ public class ThreadedMonteCarlo {
             for(int i = 0; i < totPnts; i++) {
                 lines[i] = buffedFile.readLine();
                 if(lines[i] == null) {
-                    System.err.println("wrong number of points");
+                    System.err.println("wrong number of timed_points.txt");
                     throw new IllegalArgumentException();
                 }
             }
@@ -48,7 +48,7 @@ public class ThreadedMonteCarlo {
             params[i][0] = start;
             start += amnount;
         }
-        //adds extra points to last thread
+        //adds extra timed_points.txt to last thread
         if(start < totPnts) {
             params[nProc - 1][0] += (totPnts - start);
         }

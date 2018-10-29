@@ -15,7 +15,7 @@ public class Triangles {
     private static final String errFileFormat = "file not formatted properly: ";
 
     private int nprocs = 0; /*number of process expressed by the user*/
-    private int numPoints; /*number of points readin from the file*/
+    private int numPoints; /*number of timed_points.txt readin from the file*/
 
     private int totalRightTriangles = 0;
     private Semaphore sem = new Semaphore(1);
@@ -32,7 +32,7 @@ public class Triangles {
             throw new IllegalArgumentException(errParams);
         }
 
-        //reading from file and storing points into the set
+        //reading from file and storing timed_points.txt into the set
         t.readPoints(args[0]);
         t.nprocs = Integer.parseInt(args[1]);
 
@@ -41,7 +41,7 @@ public class Triangles {
     }
 
     /**
-     * reads points from a file
+     * reads timed_points.txt from a file
      *
      * @param fileName file to read from
      */
@@ -51,7 +51,7 @@ public class Triangles {
             BufferedReader reader = new BufferedReader(new FileReader(fileName));
 
             try {
-                //number of points in the file
+                //number of timed_points.txt in the file
                 numPoints = Integer.parseInt(reader.readLine());
             } catch(NumberFormatException nfe) {
                 System.err.println(errFileFormat + nfe.getMessage());
@@ -171,7 +171,7 @@ public class Triangles {
                         }
                         amount--;
 
-                        //new triangle out points i,j,k
+                        //new triangle out timed_points.txt i,j,k
                         Triangle t = new Triangle(points.get(i), points.get(j), points.get(k));
 
                         try {

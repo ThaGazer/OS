@@ -8,107 +8,108 @@ import java.util.concurrent.TimeUnit;
 
 public class SpeedTest {
 
-    private static final String errParams = "usage: <number of test> <fileName> <nProcs>";
-    private static final String errTriangleRun = "something happened when running the program: ";
-    private static final String errFile = "could not locate file: ";
+  private static final String errUsage = "Usage: <number of test> <fileName> <nProcs>";
+  private static final String errTriangleRun = "something happened when running the program: ";
+  private static final String errFile = "could not locate file: ";
 
-    private static int loopCount;
-    private static String fileName;
+  private static int loopCount;
+  private static String fileName; /*this is for fillAFile*/
 
-    public static void main(String[] args) {
-        handleCmdLine(args);
-        //fillAFile(fileName);
+  public static void main(String[] args) {
+    //TODO increase efficiency
 
-        StringBuilder out = new StringBuilder();
+    handleCmdLine(args);
+    //fillAFile(fileName);
+
+    StringBuilder out = new StringBuilder();
 //        out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
-//        out.append(handleOutput(TrianglesClass.class.getSimpleName(), runMain(TrianglesClass.class, new String[]{args[1]})));
-        out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1], args[2]})));
+//        out.append(handleOutput(TrianglesMapped.class.getSimpleName(), runMain(TrianglesMapped.class, new String[]{args[1]})));
+    out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1], args[2]})));
 
-        System.out.println("\n" + out);
+    System.out.println("\n" + out);
+  }
+
+  private static String[] runMain(Class<?> type, String[] args) {
+    List<Long> times = new ArrayList<>();
+    for(int i = 0; i < loopCount; i++) {
+      try {
+        String topOutput = "------------" + type.getSimpleName() + " output------------";
+        System.out.println(topOutput);
+
+        long start = System.nanoTime();
+        type.getDeclaredMethod("main", String[].class).invoke(null, (Object)args);
+        long stop = System.nanoTime();
+
+        for(int j = 0; j < topOutput.length(); j++) {
+          System.out.print("-");
+        }
+        System.out.println();
+
+        System.out.println("Program runtime " + i + ": " + (stop - start) + "ns");
+        times.add((stop - start));
+      } catch(Exception e) {
+        System.err.println(errTriangleRun + e.getCause());
+        return new String[]{};
+      }
+    }
+    return calculateAvg(times);
+  }
+
+  private static String[] calculateAvg(List<Long> times) {
+    long sum = 0;
+    //times.forEach((k) -> sum[0] =+ k);
+    for(Long time : times) {
+      sum += time;
+    }
+    sum = TimeUnit.NANOSECONDS.toMillis(sum);
+
+    return new String[]{String.valueOf(sum), String.valueOf((double)sum / times.size())};
+  }
+
+  private static String handleOutput(String name, String[] progOut) {
+    return name + " total runtime: " + progOut[0] + "ms\n" + name + " average runtime: " + progOut[1] + "ms\n\n";
+  }
+
+  private static void handleCmdLine(String[] args) {
+    if(args.length < 2 || args.length > 3) {
+      throw new IllegalArgumentException(errUsage);
     }
 
-    private static String handleOutput(String name, String[] progOut) {
-        return name + " total runtime: " + progOut[0] + "ms\n" + name + " average runtime: " + progOut[1] + "ms\n\n";
+    loopCount = Integer.parseInt(args[0]);
+  }
+
+  private static void fillAFile(String fileName) throws IOException {
+    int pointCount = 2000;
+    FileWriter fileWriter = new FileWriter(new File(fileName));
+    Random rnd = new Random(System.nanoTime());
+    Set<Pair<Integer, Integer>> pointSet = new HashSet<>();
+
+    fileWriter.write(pointCount + "\n");
+    while(pointSet.size() != pointCount) {
+      pointSet.add(new Pair<>(rnd.nextInt(1000), rnd.nextInt(1000)));
     }
 
-    private static void handleCmdLine(String[] args) {
-        if(args.length < 2 || args.length > 3) {
-            throw new IllegalArgumentException(errParams);
-        }
+    for(Pair p : pointSet) {
+      fileWriter.write(p.getKey() + " " + p.getValue() + "\n");
+    }
+    fileWriter.flush();
+  }
 
-        loopCount = Integer.parseInt(args[0]);
-        fileName = args[1];
+  private static class Pair<K, V> {
+    K key;
+    V value;
+
+    public Pair(K key, V val) {
+      this.key = key;
+      this.value = val;
     }
 
-    private static String[] runMain(Class<?> type, String[] args) {
-        List<Long> times = new ArrayList<>();
-        for(int i = 0; i < loopCount; i++) {
-            try {
-                String topOutput = "------------" + type.getSimpleName() + " output------------";
-                System.out.println(topOutput);
-
-                long start = System.nanoTime();
-                type.getDeclaredMethod("main", String[].class).invoke(null, (Object) args);
-                long stop = System.nanoTime();
-
-                for(int j = 0; j < topOutput.length(); j++) {
-                    System.out.print("-");
-                }
-                System.out.println();
-
-                System.out.println("Program runtime " + i + ": " + (stop - start) + "ns");
-                times.add((stop - start));
-            } catch(Exception e) {
-                System.err.println(errTriangleRun + e.getCause());
-                return new String[]{};
-            }
-        }
-        return calculateAvg(times);
+    public K getKey() {
+      return key;
     }
 
-    private static String[] calculateAvg(List<Long> times) {
-        long sum = 0;
-        //times.forEach((k) -> sum[0] =+ k);
-        for(Long time : times) {
-            sum += time;
-        }
-        sum = TimeUnit.NANOSECONDS.toMillis(sum);
-
-        return new String[]{String.valueOf(sum), String.valueOf((double) sum / times.size())};
+    public V getValue() {
+      return value;
     }
-
-    private static void fillAFile(String fileName) throws IOException {
-        int pointCount = 2000;
-        FileWriter fileWriter = new FileWriter(new File(fileName));
-        Random rnd = new Random(System.nanoTime());
-        Set<Pair<Integer,Integer>> pointSet = new HashSet<>();
-
-        fileWriter.write(pointCount + "\n");
-        while(pointSet.size() != pointCount) {
-            pointSet.add(new Pair<>(rnd.nextInt(1000), rnd.nextInt(1000)));
-        }
-
-        for(Pair p : pointSet) {
-            fileWriter.write(p.getKey() + " " + p.getValue() + "\n");
-        }
-        fileWriter.flush();
-    }
-
-    private static class Pair<K, V> {
-        K key;
-        V value;
-
-        public Pair(K key, V val) {
-            this.key = key;
-            this.value = val;
-        }
-
-        public K getKey() {
-            return key;
-        }
-
-        public V getValue() {
-            return value;
-        }
-    }
+  }
 }
