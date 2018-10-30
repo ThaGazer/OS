@@ -4,6 +4,17 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/FortuneTeller/part2" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Chuck_Hardabs/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Tag/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/RightTriangle/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/RightTriangle/test" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/src/MonteCarlo/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/MMIO/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Mapping/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/MainMemory/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/FortuneTeller/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/Fileio/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/AIO/code" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/src/AIO/logs" />
     </content>
     <orderEntry type="inheritedJdk" />
