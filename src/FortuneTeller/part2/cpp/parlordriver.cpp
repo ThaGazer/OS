@@ -32,10 +32,14 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+/**
+ * Creates a new teller
+ */
 void* runTeller(void* par) {
    Parlor* parlor = (Parlor*)par;
    int peopleHelped = 0;
 
+    //continue to help patrons until the store closes
     while(true) {
         string patron = parlor->TellFortune();
 
@@ -52,22 +56,30 @@ void* runTeller(void* par) {
     exit(0);
 }
 
+/**
+ * Creates new patrons
+ */
 void* patronSpawner(void* parlor) {
-    int NUMTHREAD
-    pthread_t thread[NUMTHREAD];
+    int NUMTHREAD = 1000;
+    pthread_t thread[NUMTHREAD]; /*holds created threads. up to NUMTHREAD*/
 
     for(int i = 0; i < NUMTHREAD; i++) {
         pthread_create(&thread[i], NULL, &runPatron, parlor);
     }
 
+    //wait for threads to finish
     for(int i = 0; i < NUMTHREAD; i++) {
         pthread_join(thread[i], NULL);
     }
 }
 
+/**
+ * Acts as a patron entering the parlor
+ */
 void* runPatron(void* par) {
     Parlor* parlor = (Parlor*)par;
 
+    //tries to take a seat in the parlor
     if(parlor->NewPatron(to_string(i))) {
         printf("%i took a seat in the parlor", i);
     } else {

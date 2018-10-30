@@ -1,4 +1,4 @@
-package FortuneTeller.part2.dance;
+package dance;
 
 /**
  * Class to manage a dance floor.
