@@ -67,6 +67,8 @@ public class TrianglesMapped {
     int startLoc = 0;
     AtomicInteger totalRightTriangles = new AtomicInteger();
 
+
+
     for(int i = 0; i < threadCount; i++) {
       int ajustedWorkLoad = workLoad;
       if(remainder > 0) {
@@ -77,29 +79,7 @@ public class TrianglesMapped {
       int finalAjustedWorkLoad = ajustedWorkLoad;
       int finalStartLoc = startLoc;
       Thread thread = new Thread(() -> {
-        for(int j = finalStartLoc; j < finalStartLoc + finalAjustedWorkLoad; j++) {
-          for(int k = 0; k < pointList.size(); k++) {
-            for(int l = 0; l < pointList.size(); l++) {
-              if(j != k && j != l && k != l) {
-                Triangle t = new Triangle(pointList.get(j), pointList.get(k), pointList.get(l));
-                //System.out.println(t);
-                try {
-                  sem.acquire();
-                } catch(InterruptedException e) {
-                  System.err.println(errSem + e.getMessage());
-                  System.exit(1);
-                }
-                if(!rightTriangles.contains(t)) {
-                  if(t.isRight()) {
-                    totalRightTriangles.getAndIncrement();
-                    rightTriangles.add(t);
-                  }
-                }
-                sem.release();
-              }
-            }
-          }
-        }
+        totalRightTriangles.incrementAndGet();
       });
       thread.start();
       threadList.add(thread);

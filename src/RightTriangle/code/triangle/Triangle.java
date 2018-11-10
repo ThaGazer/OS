@@ -1,17 +1,20 @@
 package triangle;
 
 public class Triangle {
-  private Point a, b, c;
+
+  private static final String errBigInt = "oops to big: ";
+
+  private long a, b, c;
   private boolean right;
 
   public Triangle() {
-    setA(new Point());
-    setB(new Point());
-    setC(new Point());
+    setA(-1);
+    setB(-1);
+    setC(-1);
     right = false;
   }
 
-  public Triangle(Point a, Point b, Point c) {
+  public Triangle(int a, int b, int c) {
     setA(a);
     setB(b);
     setC(c);
@@ -22,28 +25,37 @@ public class Triangle {
     this(t.getA(), t.getB(), t.getC());
   }
 
-  public void setA(Point p) {
-    a = new Point(p);
+  public void setA(int p) {
+    if((long)p > Long.MAX_VALUE) {
+      throw new IndexOutOfBoundsException(errBigInt);
+    }
+    a = p;
   }
 
-  public void setB(Point p) {
-    b = new Point(p);
+  public void setB(int p) {
+    if((long)p > Long.MAX_VALUE) {
+      throw new IndexOutOfBoundsException(errBigInt);
+    }
+    b = p;
   }
 
-  public void setC(Point p) {
-    c = new Point(p);
+  public void setC(int p) {
+    if((long)p > Long.MAX_VALUE) {
+      throw new IndexOutOfBoundsException(errBigInt);
+    }
+    c = p;
   }
 
-  public Point getA() {
-    return new Point(a);
+  public int getA() {
+    return (int)a;
   }
 
-  public Point getB() {
-    return new Point(b);
+  public int getB() {
+    return (int)b;
   }
 
-  public Point getC() {
-    return new Point(c);
+  public int getC() {
+    return (int)c;
   }
 
   public boolean isRight() {
@@ -51,7 +63,7 @@ public class Triangle {
   }
 
   public boolean isTriangle() {
-    if(getA().equals(getB()) || getA().equals(getC()) || getB().equals(getC())) {
+    if(getA() == getB() || getA() == getC() || getB() == getC()) {
       return false;
     }
     return !getA().isZeroSlope(getB(), getC());
@@ -82,19 +94,19 @@ public class Triangle {
     }
   }
 
-  private boolean has(Point p) {
-    if(getA().equals(p)) {
+  private boolean has(int p) {
+    if(getA() == p) {
       return true;
-    } else if(getB().equals(p)) {
+    } else if(getB() == p) {
       return true;
     } else {
-      return getC().equals(p);
+      return getC() == p;
     }
   }
 
   @Override
   public int hashCode() {
-    return a.hashCode() + b.hashCode() + c.hashCode();
+    return Long.hashCode(a) + Long.hashCode(b) + Long.hashCode(c);
   }
 
   @Override
@@ -116,6 +128,6 @@ public class Triangle {
   }
 
   public String toString() {
-    return getA().toString() + getB().toString() + getC().toString();
+    return "(" + getA() + ") (" + getB() + ") (" + getC() + ")";
   }
 }

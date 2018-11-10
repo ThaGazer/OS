@@ -54,4 +54,9 @@ class TriangleTest {
     Point p2 = new Point(1, 0);
     assertNotEquals(p1, p2);
   }
+
+  @Test
+  void timeReads() {
+
+  }
 }

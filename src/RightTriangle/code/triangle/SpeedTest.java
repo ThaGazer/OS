@@ -23,8 +23,8 @@ public class SpeedTest {
 
     StringBuilder out = new StringBuilder();
 //    out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
-//    out.append(handleOutput(TrianglesMapped.class.getSimpleName(), runMain(TrianglesMapped.class, new String[]{args[1]})));
-    out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1], args[2]})));
+    out.append(handleOutput(TrianglesMapped.class.getSimpleName(), runMain(TrianglesMapped.class, new String[]{args[1], args[2]})));
+//    out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1], args[2]})));
 
     System.out.println("\n" + out);
   }
@@ -49,7 +49,7 @@ public class SpeedTest {
         times.add((stop - start));
       } catch(Exception e) {
         System.err.println(errTriangleRun + e.getCause());
-        return new String[]{};
+        System.exit(1);
       }
     }
     return calculateAvg(times);
