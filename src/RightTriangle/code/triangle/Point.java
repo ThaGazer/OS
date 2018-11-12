@@ -34,10 +34,6 @@ public class Point implements Comparable<Point> {
     this.y = y;
   }
 
-  public boolean isZeroSlope(Point p2, Point p3) {
-    return getX() == p2.getX() && getX() == p3.getX() || getY() == p2.getY() && getY() == p3.getY();
-  }
-
   public int distance(Point p1) {
     return Math.abs(((getX() - p1.getX()) * (getX() - p1.getX())) + ((getY() - p1.getY()) * (getY() - p1.getY())));
   }

@@ -6,6 +6,7 @@ import java.io.RandomAccessFile;
 import java.net.ProtocolException;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TrianglesMapped {
@@ -65,9 +66,7 @@ public class TrianglesMapped {
     int startLoc = 0;
     AtomicInteger totalRightTriangles = new AtomicInteger();
 
-    pointList.sort((o1,o2) -> {
-
-    });
+    pointList.sort(Comparator.naturalOrder());
 
     for(int i = 0; i < threadCount; i++) {
       int ajustedWorkLoad = workLoad;
@@ -77,9 +76,11 @@ public class TrianglesMapped {
       }
 
       int passedWorkLoad = ajustedWorkLoad;
-      int passesStartLoc = startLoc;
+      int passedStartLoc = startLoc;
       Thread thread = new Thread(() -> {
-
+        for(int j = passedStartLoc; j < (passedStartLoc+passedWorkLoad) && j < (pointList.size()-2); j++) {
+          Triangle t = new Triangle(pointList.get(j), pointList.get(j+1), pointList.get(j+2));
+        }
       });
       thread.start();
       threadList.add(thread);
