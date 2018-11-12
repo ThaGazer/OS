@@ -1,6 +1,6 @@
 package triangle;
 
-public class Point {
+public class Point implements Comparable<Point> {
   private int x;
   private int y;
 
@@ -43,6 +43,14 @@ public class Point {
   }
 
   @Override
+  public int compareTo(Point obj) {
+    if(getX() == obj.getX()) {
+      return getY() - obj.getY();
+    }
+    return getX() - obj.getX();
+  }
+
+  @Override
   public int hashCode() {
     int prime = 31;
     int res = 1;
@@ -73,5 +81,6 @@ public class Point {
   public String toString() {
     return "(" + getX() + "," + getY() + ")";
   }
+
 }
 

@@ -156,7 +156,7 @@ public class Triangles {
 
     @Override
     public void run() {
-      boolean start = true;
+     /* boolean start = true;
       for(; i < points.size() && amount > 0; i++) {
         if(!start) {
           j = i + 1;
@@ -192,7 +192,7 @@ public class Triangles {
             }
           }
         }
-      }
+      }*/
     }
   }
 }

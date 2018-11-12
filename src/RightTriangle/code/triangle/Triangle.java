@@ -5,20 +5,17 @@ public class Triangle {
   private static final String errBigInt = "oops to big: ";
 
   private long a, b, c;
-  private boolean right;
 
   public Triangle() {
     setA(-1);
     setB(-1);
     setC(-1);
-    right = false;
   }
 
   public Triangle(int a, int b, int c) {
     setA(a);
     setB(b);
     setC(c);
-    right = rightCheck();
   }
 
   public Triangle(Triangle t) {
@@ -58,7 +55,7 @@ public class Triangle {
     return (int)c;
   }
 
-  public boolean isRight() {
+/*  public boolean isRight() {
     return right;
   }
 
@@ -66,11 +63,12 @@ public class Triangle {
     if(getA() == getB() || getA() == getC() || getB() == getC()) {
       return false;
     }
-    return !getA().isZeroSlope(getB(), getC());
+    return true;
+    *//*return !getA().isZeroSlope(getB(), getC());*//*
   }
 
   private boolean rightCheck() {
-    if(isTriangle()) {
+*//*    if(isTriangle()) {
       int a, b, c, temp;
       c = getA().distance(getB());
 
@@ -91,8 +89,8 @@ public class Triangle {
       return a + b == c;
     } else {
       return false;
-    }
-  }
+    }*//*
+  }*/
 
   private boolean has(int p) {
     if(getA() == p) {

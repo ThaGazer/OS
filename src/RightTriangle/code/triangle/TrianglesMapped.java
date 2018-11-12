@@ -6,7 +6,6 @@ import java.io.RandomAccessFile;
 import java.net.ProtocolException;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TrianglesMapped {
@@ -14,7 +13,7 @@ public class TrianglesMapped {
   private static final String errUsage = "Usage: <filename> <thread count>";
   private static final String errFNF = "Could not find file: ";
   private static final String errThreadJoin = "Could not join thread: ";
-  private static final String errSem = "Could not acquire semaphore: ";
+  private static final String errDupPoint = "found matching points";
   private static final String errFileFormat = "There are problems with the way the file is formatted";
   private static final String errFileOverflow = "too many point found";
   private static final String errFileUnderflow = "not enough points in file";
@@ -24,9 +23,8 @@ public class TrianglesMapped {
   private ArrayList<Point> pointList = new ArrayList<>();
   private ArrayList<Triangle> rightTriangles = new ArrayList<>();
   private MappedTextBuffer pointsTextBuffer;
-  private Semaphore sem = new Semaphore(1);
 
-  public TrianglesMapped(String[] args) {
+  private TrianglesMapped(String[] args) {
     if(args.length < 2 || args.length > 2) {
       throw new IllegalArgumentException(errUsage);
     }
@@ -45,7 +43,7 @@ public class TrianglesMapped {
     System.out.println("Right triangles: " + totRightTri);
   }
 
-  protected void readPoints(String filename) {
+  private void readPoints(String filename) {
     File pointsFile = new File(filename);
     try {
       pointsTextBuffer = new MappedTextBuffer(new RandomAccessFile(pointsFile, "r").
@@ -58,7 +56,7 @@ public class TrianglesMapped {
     fileFormatChecker();
   }
 
-  protected int findTriangles() {
+  private int findTriangles() {
     //TODO remove debug commenting
 
     ArrayList<Thread> threadList = new ArrayList<>();
@@ -67,7 +65,9 @@ public class TrianglesMapped {
     int startLoc = 0;
     AtomicInteger totalRightTriangles = new AtomicInteger();
 
+    pointList.sort((o1,o2) -> {
 
+    });
 
     for(int i = 0; i < threadCount; i++) {
       int ajustedWorkLoad = workLoad;
@@ -76,10 +76,10 @@ public class TrianglesMapped {
         remainder--;
       }
 
-      int finalAjustedWorkLoad = ajustedWorkLoad;
-      int finalStartLoc = startLoc;
+      int passedWorkLoad = ajustedWorkLoad;
+      int passesStartLoc = startLoc;
       Thread thread = new Thread(() -> {
-        totalRightTriangles.incrementAndGet();
+
       });
       thread.start();
       threadList.add(thread);
@@ -109,7 +109,10 @@ public class TrianglesMapped {
         if(pointCount <= 0) {
           throw new ProtocolException(errFileOverflow);
         }
-        pointList.add(new Point(pointsTextBuffer.nextInt(), pointsTextBuffer.nextInt()));
+
+        if(!pointList.add(new Point(pointsTextBuffer.nextInt(), pointsTextBuffer.nextInt()))) {
+          throw new IllegalArgumentException(errDupPoint);
+        }
         pointCount--;
       }
 
