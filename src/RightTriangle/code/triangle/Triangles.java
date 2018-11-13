@@ -1,198 +1,160 @@
+/*
+  Author: Justin Ritter
+  Date:
+  File: TrianglesMapped.java
+  Description: testing file mapping with checking right triangles from a list of points
+ */
+
 package triangle;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.File;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.io.RandomAccessFile;
+import java.net.ProtocolException;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Triangles {
-  //Error messages
-  private static final String errParams = "Usage: <filename> <nPros>";
-  private static final String errFNF = "file not found ";
-  private static final String errSemAcquire = "could not acquire the lock: ";
-  private static final String errFileFormat = "file not formatted properly: ";
 
-  private int nprocs = 0; /*number of process expressed by the user*/
-  private int numPoints; /*number of timed_points.txt readin from the file*/
+  private static final String errUsage = "Usage: <filename> <thread count>";
+  private static final String errFNF = "Could not find file: ";
+  private static final String errThreadJoin = "Could not join thread: ";
+  private static final String errDupPoint = "found matching points";
+  private static final String errFileFormat = "There are problems with the way the file is formatted";
+  private static final String errFileOverflow = "too many point found";
+  private static final String errFileUnderflow = "not enough points in file";
 
-  private int totalRightTriangles = 0;
-  private Semaphore sem = new Semaphore(1);
+  private String filename;
+  private int threadCount;
+  private ArrayList<Point> pointList = new ArrayList<>();
+  private MappedTextBuffer pointsTextBuffer;
+  private AtomicInteger totalRightTriangles = new AtomicInteger();
 
-  private Set<Triangle> checkTriangles = new HashSet<>();
-  private List<Point> points = new ArrayList<>();
+  private Triangles(String[] args) {
+    if(args.length < 2 || args.length > 2) {
+      throw new IllegalArgumentException(errUsage);
+    }
 
+    filename = args[0];
+    threadCount = Integer.valueOf(args[1]);
+  }
 
   public static void main(String[] args) {
-    Triangles t = new Triangles();
+    Triangles t = new Triangles(args);
 
-    //parameters checking
-    if(args.length < 2) {
-      throw new IllegalArgumentException(errParams);
-    }
+    //reads all points into a collection
+    t.readPoints();
 
-    //reading from file and storing timed_points.txt into the set
-    t.readPoints(args[0]);
-    t.nprocs = Integer.parseInt(args[1]);
+    //attempts to find all possible right triangles from points read in
+    t.findTriangles();
 
-    //calculate number of right triangles
-    System.out.println(t.findTriangles());
+    System.out.println("Right triangles: " + t.totalRightTriangles.get());
   }
 
-  /**
-   * reads timed_points.txt from a file
-   *
-   * @param fileName file to read from
-   */
-  private void readPoints(String fileName) {
+  private void readPoints() {
+    File pointsFile = new File(filename);
     try {
-      //a read buffer
-      BufferedReader reader = new BufferedReader(new FileReader(fileName));
-
-      try {
-        //number of timed_points.txt in the file
-        numPoints = Integer.parseInt(reader.readLine());
-      } catch(NumberFormatException nfe) {
-        System.err.println(errFileFormat + nfe.getMessage());
-        System.exit(1);
-      }
-
-      //will read entire line then split the line on spaces
-      String line;
-      while((line = reader.readLine()) != null) {
-        String[] lineSplit = line.split(" ");
-
-        //if line formatting is wrong
-        if(lineSplit.length != 2) {
-          System.err.println(errFileFormat + Arrays.toString(lineSplit));
-          System.exit(1);
-        }
-
-        //adds point to the set
-        points.add(new Point(Integer.parseInt(lineSplit[0]), Integer.parseInt(lineSplit[1])));
-      }
-
-      if(points.size() != numPoints) {
-        System.err.println(errFileFormat + "expected size = <" + numPoints +
-            "> actual size = <" + points.size() + ">");
-        System.exit(1);
-      }
-    } catch(NumberFormatException nfe) {
-      System.err.println(errFileFormat + nfe.getMessage());
-      System.exit(1);
-    } catch(FileNotFoundException e) {
-      System.err.println(errFNF + e.getMessage());
-      System.exit(1);
+      pointsTextBuffer = new MappedTextBuffer(new RandomAccessFile(pointsFile, "r").
+              getChannel().map(FileChannel.MapMode.READ_ONLY, 0, pointsFile.length()));
     } catch(IOException e) {
-      System.err.println(errFileFormat + e.getMessage());
+      System.err.println(errFNF + pointsFile);
+      System.exit(1);
+    }
+
+    fileFormatChecker();
+  }
+
+  private void findTriangles() {
+    //TODO remove debug commenting
+
+    ArrayList<Thread> threadList = new ArrayList<>();
+    int workLoad = pointList.size() / threadCount;
+    int remainder = pointList.size() % threadCount;
+    int startLoc = 0;
+
+    pointList.sort(Comparator.naturalOrder());
+
+    for(int i = 0; i < threadCount; i++) {
+      int ajustedWorkLoad = workLoad;
+      if(remainder > 0) {
+        ajustedWorkLoad++;
+        remainder--;
+      }
+
+      int passedWorkLoad = ajustedWorkLoad;
+      int passedStartLoc = startLoc;
+      Thread thread = new Thread(() -> {
+        //iterate through point in this threads workload or till end of points list
+        for(int j = passedStartLoc; j < (passedStartLoc+passedWorkLoad) && j < pointList.size(); j++) {
+          Point jPoint = pointList.get(j);
+          //all points before j
+          for(int k = 0; k+1 < j; k++) {
+            rightCheck(jPoint,pointList.get(k),pointList.get(k+1));
+          }
+
+          //all points after j
+          for(int k = j+1; k < pointList.size()-1; k++) {
+            rightCheck(jPoint,pointList.get(k),pointList.get(k+1));
+          }
+
+          //bounds check
+          if(j == 0) {
+            rightCheck(jPoint, pointList.get(j+1), pointList.get(pointList.size()-1));
+          } else if(j == pointList.size()-1) {
+            rightCheck(jPoint, pointList.get(0), pointList.get(j-1));
+          } else {
+            rightCheck(jPoint, pointList.get(j-1), pointList.get(j+1));
+          }
+        }
+      });
+      thread.start();
+      threadList.add(thread);
+
+      startLoc += ajustedWorkLoad;
+    }
+
+
+    //wait on all threads to finish
+    for(Thread thread : threadList) {
+      try {
+        thread.join();
+      } catch(InterruptedException e) {
+        System.err.println(errThreadJoin);
+        System.exit(1);
+      }
+    }
+  }
+
+  private void fileFormatChecker() {
+    try {
+      //how many points there should be
+      int pointCount = pointsTextBuffer.nextInt();
+      while(pointsTextBuffer.hasRemaining()) {
+        //if there were more points then there should have been
+        if(pointCount <= 0) {
+          throw new ProtocolException(errFileOverflow);
+        }
+
+        if(!pointList.add(new Point(pointsTextBuffer.nextInt(), pointsTextBuffer.nextInt()))) {
+          throw new IllegalArgumentException(errDupPoint);
+        }
+        pointCount--;
+      }
+
+      if(pointCount != 0) {
+        throw new ProtocolException(errFileUnderflow);
+      }
+    } catch(Exception e) {
+      System.err.println(errFileFormat + ": " + e.getMessage());
       System.exit(1);
     }
   }
 
-  /**
-   * find the total number of right triangles in the set
-   *
-   * @return total number of right triangles
-   */
-  private int findTriangles() {
-    findThreadTriangles();
-    return totalRightTriangles;
-  }
-
-  /**
-   * uses threads to speed up the process of finding right triangles in the set
-   */
-  private void findThreadTriangles() {
-    //prevents excessive thread creation
-    ExecutorService pool = Executors.newFixedThreadPool(nprocs);
-
-    long totalLoad = ((((long)points.size() * points.size() * points.size())) -
-        ((3L * points.size() * points.size())) + ((2L * points.size())));
-    totalLoad = totalLoad / 6L + (totalLoad % 6L);
-
-    long workLoad = totalLoad / nprocs;
-    long remainder = totalLoad % nprocs;
-
-    long workCount = 0, threadWork = workLoad;
-    for(int i = 0; i < points.size() && nprocs > 0; i++) {
-      for(int j = i + 1; j < points.size() && nprocs > 0; j++) {
-        for(int k = j + 1; k < points.size() && nprocs > 0; k++) {
-          if((workCount % threadWork) == 0) {
-            nprocs--;
-
-            if(nprocs == 0) {
-              threadWork += remainder;
-            }
-
-            pool.execute(new RightTriangleFinder(i, j, k, threadWork));
-          }
-          workCount++;
-        }
-      }
-    }
-
-    pool.shutdown();
-
-    //waiting for pool to completely shutdown before reporting result
-    while(!pool.isTerminated()) {
-    }
-  }
-
-  /**
-   * runnable class to find right triangles from a list
-   */
-  private class RightTriangleFinder implements Runnable {
-
-    private int i, j, k;
-    private long amount;
-
-    RightTriangleFinder(int i, int j, int k, long workLoad) {
-      this.i = i;
-      this.j = j;
-      this.k = k;
-      amount = workLoad;
-    }
-
-    @Override
-    public void run() {
-     /* boolean start = true;
-      for(; i < points.size() && amount > 0; i++) {
-        if(!start) {
-          j = i + 1;
-        }
-        for(; j < points.size() && amount > 0; j++) {
-          if(!start) {
-            k = j + 1;
-          }
-          for(; k < points.size() && amount > 0; k++) {
-            if(start) {
-              start = false;
-            }
-            amount--;
-
-            //new triangle out timed_points.txt i,j,k
-            Triangle t = new Triangle(points.get(i), points.get(j), points.get(k));
-
-            try {
-              sem.acquire();
-              if(!checkTriangles.contains(t)) {
-                sem.release();
-                if(t.isRight()) {
-                  sem.acquire();
-
-                  totalRightTriangles++;
-                  checkTriangles.add(t);
-
-                  sem.release();
-                }
-              }
-            } catch(InterruptedException e) {
-              System.err.println(errSemAcquire + e.getMessage());
-            }
-          }
-        }
-      }*/
+  private synchronized void rightCheck(Point p1, Point p2, Point p3) {
+    if(Triangle.isRight(p1, p2, p3)) {
+      totalRightTriangles.incrementAndGet();
     }
   }
 }

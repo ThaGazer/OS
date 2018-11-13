@@ -24,7 +24,7 @@ public class SpeedTest {
     StringBuilder out = new StringBuilder();
 //    out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
     out.append(handleOutput(TrianglesMapped.class.getSimpleName(), runMain(TrianglesMapped.class, new String[]{args[1], args[2]})));
-//    out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1], args[2]})));
+    out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1], args[2]})));
 
     System.out.println("\n" + out);
   }
@@ -33,22 +33,22 @@ public class SpeedTest {
     List<Long> times = new ArrayList<>();
     for(int i = 0; i < loopCount; i++) {
       try {
-        String topOutput = "------------" + type.getSimpleName() + " output------------";
-        System.out.println(topOutput);
+        /*String topOutput = "------------" + type.getSimpleName() + " output------------";
+        System.out.println(topOutput);*/
 
         long start = System.nanoTime();
         type.getDeclaredMethod("main", String[].class).invoke(null, (Object)args);
         long stop = System.nanoTime();
 
-        for(int j = 0; j < topOutput.length(); j++) {
+        /*for(int j = 0; j < topOutput.length(); j++) {
           System.out.print("-");
         }
         System.out.println();
 
-        System.out.println("Program runtime " + i + ": " + (stop - start) + "ns");
+        System.out.println("Program runtime " + i + ": " + (stop - start) + "ns");*/
         times.add((stop - start));
       } catch(Exception e) {
-        System.err.println(errTriangleRun + e.getCause());
+        System.err.println(errTriangleRun + e.getMessage());
         System.exit(1);
       }
     }
@@ -99,16 +99,16 @@ public class SpeedTest {
     K key;
     V value;
 
-    public Pair(K key, V val) {
+    Pair(K key, V val) {
       this.key = key;
       this.value = val;
     }
 
-    public K getKey() {
+    K getKey() {
       return key;
     }
 
-    public V getValue() {
+    V getValue() {
       return value;
     }
   }

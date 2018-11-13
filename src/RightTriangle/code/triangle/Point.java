@@ -34,8 +34,8 @@ public class Point implements Comparable<Point> {
     this.y = y;
   }
 
-  public int distance(Point p1) {
-    return Math.abs(((getX() - p1.getX()) * (getX() - p1.getX())) + ((getY() - p1.getY()) * (getY() - p1.getY())));
+  public double distance(Point p1) {
+    return ((p1.getX() - getX()) * (p1.getX() - getX())) + ((p1.getY() - getY()) * (p1.getY() - getY()));
   }
 
   @Override

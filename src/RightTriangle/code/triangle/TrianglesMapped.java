@@ -1,3 +1,10 @@
+/*
+  Author: Justin Ritter
+  Date:
+  File: TrianglesMapped.java
+  Description: testing file mapping with checking right triangles from a list of points
+ */
+
 package triangle;
 
 import java.io.File;
@@ -9,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@SuppressWarnings("Duplicates")
 public class TrianglesMapped {
 
   private static final String errUsage = "Usage: <filename> <thread count>";
@@ -22,8 +30,9 @@ public class TrianglesMapped {
   private String filename;
   private int threadCount;
   private ArrayList<Point> pointList = new ArrayList<>();
-  private ArrayList<Triangle> rightTriangles = new ArrayList<>();
   private MappedTextBuffer pointsTextBuffer;
+  private AtomicInteger totalRightTriangles = new AtomicInteger();
+  private Thread fileCheckThread;
 
   private TrianglesMapped(String[] args) {
     if(args.length < 2 || args.length > 2) {
@@ -38,13 +47,15 @@ public class TrianglesMapped {
     TrianglesMapped t = new TrianglesMapped(args);
 
     //reads all points into a collection
-    t.readPoints(t.filename);
-    int totRightTri = t.findTriangles();
+    t.readPoints();
 
-    System.out.println("Right triangles: " + totRightTri);
+    //attempts to find all possible right triangles from points read in
+    t.findTriangles();
+
+    System.out.println("Right triangles: " + t.totalRightTriangles.get());
   }
 
-  private void readPoints(String filename) {
+  private void readPoints() {
     File pointsFile = new File(filename);
     try {
       pointsTextBuffer = new MappedTextBuffer(new RandomAccessFile(pointsFile, "r").
@@ -57,14 +68,20 @@ public class TrianglesMapped {
     fileFormatChecker();
   }
 
-  private int findTriangles() {
+  private void findTriangles() {
     //TODO remove debug commenting
+
+    try {
+      fileCheckThread.join();
+    } catch (InterruptedException e) {
+      System.err.println(e.getMessage());
+      System.exit(1);
+    }
 
     ArrayList<Thread> threadList = new ArrayList<>();
     int workLoad = pointList.size() / threadCount;
     int remainder = pointList.size() % threadCount;
     int startLoc = 0;
-    AtomicInteger totalRightTriangles = new AtomicInteger();
 
     pointList.sort(Comparator.naturalOrder());
 
@@ -78,8 +95,27 @@ public class TrianglesMapped {
       int passedWorkLoad = ajustedWorkLoad;
       int passedStartLoc = startLoc;
       Thread thread = new Thread(() -> {
-        for(int j = passedStartLoc; j < (passedStartLoc+passedWorkLoad) && j < (pointList.size()-2); j++) {
-          Triangle t = new Triangle(pointList.get(j), pointList.get(j+1), pointList.get(j+2));
+        //iterate through point in this threads workload or till end of points list
+        for(int j = passedStartLoc; j < (passedStartLoc+passedWorkLoad) && j < pointList.size(); j++) {
+          Point jPoint = pointList.get(j);
+          //all points before j
+          for(int k = 0; k+1 < j; k++) {
+            rightCheck(jPoint,pointList.get(k),pointList.get(k+1));
+          }
+
+          //all points after j
+          for(int k = j+1; k < pointList.size()-1; k++) {
+            rightCheck(jPoint,pointList.get(k),pointList.get(k+1));
+          }
+
+          //bounds check
+          if(j == 0) {
+            rightCheck(jPoint, pointList.get(j+1), pointList.get(pointList.size()-1));
+          } else if(j == pointList.size()-1) {
+            rightCheck(jPoint, pointList.get(0), pointList.get(j-1));
+          } else {
+            rightCheck(jPoint, pointList.get(j-1), pointList.get(j+1));
+          }
         }
       });
       thread.start();
@@ -98,31 +134,39 @@ public class TrianglesMapped {
         System.exit(1);
       }
     }
-    return totalRightTriangles.get();
   }
 
   private void fileFormatChecker() {
-    try {
-      //how many points there should be
-      int pointCount = pointsTextBuffer.nextInt();
-      while(pointsTextBuffer.hasRemaining()) {
-        //if there were more points then there should have been
-        if(pointCount <= 0) {
-          throw new ProtocolException(errFileOverflow);
+    fileCheckThread = new Thread(() -> {
+      try {
+        //how many points there should be
+        int pointCount = pointsTextBuffer.nextInt();
+        while(pointsTextBuffer.hasRemaining()) {
+          //if there were more points then there should have been
+          if(pointCount <= 0) {
+            throw new ProtocolException(errFileOverflow);
+          }
+
+          if(!pointList.add(new Point(pointsTextBuffer.nextInt(), pointsTextBuffer.nextInt()))) {
+            throw new IllegalArgumentException(errDupPoint);
+          }
+          pointCount--;
         }
 
-        if(!pointList.add(new Point(pointsTextBuffer.nextInt(), pointsTextBuffer.nextInt()))) {
-          throw new IllegalArgumentException(errDupPoint);
+        if(pointCount != 0) {
+          throw new ProtocolException(errFileUnderflow);
         }
-        pointCount--;
+      } catch(Exception e) {
+        System.err.println(errFileFormat + ": " + e.getMessage());
+        System.exit(1);
       }
+    });
+    fileCheckThread.start();
+  }
 
-      if(pointCount > 0) {
-        throw new ProtocolException(errFileUnderflow);
-      }
-    } catch(Exception e) {
-      System.err.println(errFileFormat + ": " + e.getMessage());
-      System.exit(1);
+  private synchronized void rightCheck(Point p1, Point p2, Point p3) {
+    if(Triangle.isRight(p1, p2, p3)) {
+      totalRightTriangles.incrementAndGet();
     }
   }
 }
