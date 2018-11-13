@@ -1,19 +1,17 @@
-package triangle;/*
+/*
  * Author: Justin Ritter
- * File: null.java
  * Date: 10/27/2018
+ * File: MappedTextBuffer.java
  */
+
+package triangle;
 
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 public class MappedTextBuffer {
 
   private static final String errNullBuffer = "ByteBuffer can not be null";
-
-  private final ArrayList<Character> DELIMITORS = new ArrayList<>(Arrays.asList(' ', '\n'));
 
   private MappedByteBuffer byteBuffer;
 
@@ -60,7 +58,8 @@ public class MappedTextBuffer {
 
     //loop and add chars until a space or line ending is hit
     position(pos);
-    while(byteBuffer.hasRemaining() && (c = (char)byteBuffer.get()) != ' ' && c != '\n') {
+    while(byteBuffer.hasRemaining() &&
+            (c = (char)byteBuffer.get()) != ' ' && c != '\n') {
       intRep.append(c);
       pos++;
     }

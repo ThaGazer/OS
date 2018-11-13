@@ -1,3 +1,9 @@
+/*
+ * Author: Justin Ritter
+ * Date:
+ * File: Point.java
+ */
+
 package triangle;
 
 public class Point implements Comparable<Point> {
@@ -35,7 +41,8 @@ public class Point implements Comparable<Point> {
   }
 
   public double distance(Point p1) {
-    return ((p1.getX() - getX()) * (p1.getX() - getX())) + ((p1.getY() - getY()) * (p1.getY() - getY()));
+    return ((p1.getX() - getX()) * (p1.getX() - getX())) +
+            ((p1.getY() - getY()) * (p1.getY() - getY()));
   }
 
   @Override

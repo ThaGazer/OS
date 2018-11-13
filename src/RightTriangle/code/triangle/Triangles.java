@@ -10,7 +10,6 @@ package triangle;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.ProtocolException;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -22,7 +21,8 @@ public class Triangles {
   private static final String errFNF = "Could not find file: ";
   private static final String errThreadJoin = "Could not join thread: ";
   private static final String errDupPoint = "found matching points";
-  private static final String errFileFormat = "There are problems with the way the file is formatted";
+  private static final String errFileFormat = "There are problems with the " +
+          "way the file is formatted";
   private static final String errFileOverflow = "too many point found";
   private static final String errFileUnderflow = "not enough points in file";
 
@@ -56,8 +56,10 @@ public class Triangles {
   private void readPoints() {
     File pointsFile = new File(filename);
     try {
-      pointsTextBuffer = new MappedTextBuffer(new RandomAccessFile(pointsFile, "r").
-              getChannel().map(FileChannel.MapMode.READ_ONLY, 0, pointsFile.length()));
+      pointsTextBuffer = new MappedTextBuffer
+              (new RandomAccessFile(pointsFile, "r").
+              getChannel().
+              map(FileChannel.MapMode.READ_ONLY, 0, pointsFile.length()));
     } catch(IOException e) {
       System.err.println(errFNF + pointsFile);
       System.exit(1);
@@ -67,8 +69,6 @@ public class Triangles {
   }
 
   private void findTriangles() {
-    //TODO remove debug commenting
-
     ArrayList<Thread> threadList = new ArrayList<>();
     int workLoad = pointList.size() / threadCount;
     int remainder = pointList.size() % threadCount;
@@ -86,8 +86,10 @@ public class Triangles {
       int passedWorkLoad = ajustedWorkLoad;
       int passedStartLoc = startLoc;
       Thread thread = new Thread(() -> {
-        //iterate through point in this threads workload or till end of points list
-        for(int j = passedStartLoc; j < (passedStartLoc+passedWorkLoad) && j < pointList.size(); j++) {
+        //iterate through point in this threads
+        // workload or till end of points list
+        for(int j = passedStartLoc; j < (passedStartLoc+passedWorkLoad) &&
+                j < pointList.size(); j++) {
           Point jPoint = pointList.get(j);
           //all points before j
           for(int k = 0; k+1 < j; k++) {
@@ -101,7 +103,8 @@ public class Triangles {
 
           //bounds check
           if(j == 0) {
-            rightCheck(jPoint, pointList.get(j+1), pointList.get(pointList.size()-1));
+            rightCheck(jPoint, pointList.get(j+1),
+                    pointList.get(pointList.size()-1));
           } else if(j == pointList.size()-1) {
             rightCheck(jPoint, pointList.get(0), pointList.get(j-1));
           } else {
@@ -134,17 +137,18 @@ public class Triangles {
       while(pointsTextBuffer.hasRemaining()) {
         //if there were more points then there should have been
         if(pointCount <= 0) {
-          throw new ProtocolException(errFileOverflow);
+          throw new Exception(errFileOverflow);
         }
 
-        if(!pointList.add(new Point(pointsTextBuffer.nextInt(), pointsTextBuffer.nextInt()))) {
+        if(!pointList.add(new Point(pointsTextBuffer.nextInt(),
+                pointsTextBuffer.nextInt()))) {
           throw new IllegalArgumentException(errDupPoint);
         }
         pointCount--;
       }
 
       if(pointCount != 0) {
-        throw new ProtocolException(errFileUnderflow);
+        throw new Exception(errFileUnderflow);
       }
     } catch(Exception e) {
       System.err.println(errFileFormat + ": " + e.getMessage());

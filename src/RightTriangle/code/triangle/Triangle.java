@@ -1,3 +1,9 @@
+/*
+ * Author: Justin Ritter
+ * Date:
+ * File: Triangle.java
+ * Description: method to assist in triangle checking
+ */
 package triangle;
 
 public class Triangle {
@@ -28,6 +34,5 @@ public class Triangle {
       b = temp;
     }
     return a+b == c;
-//    return (a*a + b*b) == c*c;
   }
 }
