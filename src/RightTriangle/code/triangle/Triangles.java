@@ -156,7 +156,7 @@ public class Triangles {
     }
   }
 
-  private synchronized void rightCheck(Point p1, Point p2, Point p3) {
+  private void rightCheck(Point p1, Point p2, Point p3) {
     if(Triangle.isRight(p1, p2, p3)) {
       totalRightTriangles.incrementAndGet();
     }
