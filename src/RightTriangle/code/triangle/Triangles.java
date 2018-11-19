@@ -22,9 +22,9 @@ public class Triangles {
   private static final String errThreadJoin = "Could not join thread: ";
   private static final String errDupPoint = "found matching points";
   private static final String errFileFormat = "There are problems with the " +
-          "way the file is formatted";
-  private static final String errFileOverflow = "too many point found";
-  private static final String errFileUnderflow = "not enough points in file";
+          "way the file is formatted: ";
+  private static final String errFileOverflow = "too many points found";
+  private static final String errFileUnderflow = "too few points found";
 
   private String filename;
   private int threadCount;
@@ -102,13 +102,15 @@ public class Triangles {
           }
 
           //bounds check
-          if(j == 0) {
-            rightCheck(jPoint, pointList.get(j+1),
-                    pointList.get(pointList.size()-1));
-          } else if(j == pointList.size()-1) {
-            rightCheck(jPoint, pointList.get(0), pointList.get(j-1));
-          } else {
-            rightCheck(jPoint, pointList.get(j-1), pointList.get(j+1));
+          if(pointList.size() != 3) {
+            if (j == 0) {
+              rightCheck(jPoint, pointList.get(j + 1),
+                      pointList.get(pointList.size() - 1));
+            } else if (j == pointList.size() - 1) {
+              rightCheck(jPoint, pointList.get(0), pointList.get(j - 1));
+            } else {
+              rightCheck(jPoint, pointList.get(j - 1), pointList.get(j + 1));
+            }
           }
         }
       });
@@ -134,6 +136,11 @@ public class Triangles {
     try {
       //how many points there should be
       int pointCount = pointsTextBuffer.nextInt();
+
+      if(pointCount < 3) {
+        throw new Exception(errFileFormat + errFileUnderflow);
+      }
+
       while(pointsTextBuffer.hasRemaining()) {
         //if there were more points then there should have been
         if(pointCount <= 0) {

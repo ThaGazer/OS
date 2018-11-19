@@ -17,22 +17,11 @@ public class Triangle {
   }
 
   private static boolean rightCheck(Point p1, Point p2, Point p3) {
-    double a, b, c, temp;
-    c = p1.distance(p2);
+    double a, b, c;
+    a = p1.distance(p2);
+    b = p1.distance(p3);
+    c = p2.distance(p3);
 
-    a = p1.distance(p3);
-    if(a > c) {
-      temp = c;
-      c = a;
-      a = temp;
-    }
-
-    b = p2.distance(p3);
-    if(b > c) {
-      temp = c;
-      c = b;
-      b = temp;
-    }
-    return a+b == c;
+    return a+b == c || a+c == b || b+c == c;
   }
 }

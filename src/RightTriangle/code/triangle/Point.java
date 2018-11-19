@@ -6,6 +6,8 @@
 
 package triangle;
 
+import static java.lang.Math.abs;
+
 public class Point implements Comparable<Point> {
   private int x;
   private int y;
@@ -41,8 +43,8 @@ public class Point implements Comparable<Point> {
   }
 
   public double distance(Point p1) {
-    return ((p1.getX() - getX()) * (p1.getX() - getX())) +
-            ((p1.getY() - getY()) * (p1.getY() - getY()));
+    return abs(((p1.getX() - getX()) * (p1.getX() - getX())) +
+            ((p1.getY() - getY()) * (p1.getY() - getY())));
   }
 
   @Override

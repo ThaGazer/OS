@@ -56,8 +56,9 @@ public class MappedTextBuffer {
     StringBuilder intRep = new StringBuilder();
     char c;
 
-    //loop and add chars until a space or line ending is hit
+    //sets buffer position
     position(pos);
+    //loop and add chars until a space or line ending is hit
     while(byteBuffer.hasRemaining() &&
             (c = (char)byteBuffer.get()) != ' ' && c != '\n') {
       intRep.append(c);
