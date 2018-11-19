@@ -39,7 +39,6 @@ public class SpeedTest {
         long start = System.nanoTime();
         type.getDeclaredMethod("main", String[].class).invoke(null, (Object)args);
         long stop = System.nanoTime();
-
         /*for(int j = 0; j < topOutput.length(); j++) {
           System.out.print("-");
         }
