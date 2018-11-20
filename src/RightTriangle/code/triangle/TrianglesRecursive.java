@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Triangles {
+public class TrianglesRecursive {
 
   private static final String errUsage = "Usage: <filename> <thread count>";
   private static final String errFNF = "Could not find file: ";
@@ -31,9 +31,8 @@ public class Triangles {
   private ArrayList<Point> pointList = new ArrayList<>();
   private MappedTextBuffer pointsTextBuffer;
   private AtomicInteger totalRightTriangles = new AtomicInteger();
-  private AtomicInteger totalTriangles = new AtomicInteger();
 
-  private Triangles(String[] args) {
+  private TrianglesRecursive(String[] args) {
     if(args.length < 2 || args.length > 2) {
       throw new IllegalArgumentException(errUsage);
     }
@@ -43,7 +42,7 @@ public class Triangles {
   }
 
   public static void main(String[] args) {
-    Triangles t = new Triangles(args);
+    TrianglesRecursive t = new TrianglesRecursive(args);
 
     //reads all points into a collection
     t.readPoints();
@@ -51,7 +50,6 @@ public class Triangles {
     //attempts to find all possible right triangles from points read in
     t.findTriangles();
 
-    System.out.println(t.totalTriangles.get());
     System.out.println("Right triangles: " + t.totalRightTriangles.get());
   }
 
@@ -70,6 +68,13 @@ public class Triangles {
     fileFormatChecker();
   }
 
+  /**
+   * https://www.geeksforgeeks.org/print-all-possible-combinations-of-r-elements-in-a-given-array-of-size-n/
+   */
+  private void findTriRecur(int start, int end, int index, int r) {
+
+  }
+
   private void findTriangles() {
     ArrayList<Thread> threadList = new ArrayList<>();
     int workLoad = pointList.size() / threadCount;
@@ -77,64 +82,8 @@ public class Triangles {
     int startLoc = 0;
 
     pointList.sort(Comparator.naturalOrder());
-    System.out.println(pointList);
 
-    if(pointList.size() == 3) {
-      rightCheck(0, 1, 2);
-    } else if(pointList.size() > 3) {
-      for(int i = 0; i < threadCount; i++) {
-        int ajustedWorkLoad = workLoad;
-        if(remainder > 0) {
-          ajustedWorkLoad++;
-          remainder--;
-        }
 
-        int passedWorkLoad = ajustedWorkLoad;
-        int passedStartLoc = startLoc;
-        Thread thread = new Thread(() -> {
-
-          //iterate through point in this threads
-          // workload or till end of points list
-          for(int j = passedStartLoc; j < (passedStartLoc + passedWorkLoad) &&
-                  j < pointList.size(); j++) {
-            //all points before j
-            for(int k = 0; k + 1 < j; k++) {
-              System.out.println(k + " " + (k+1) + " " + j);
-              rightCheck(j, k, k+1);
-            }
-
-            //all points after j
-            for(int k = j + 1; k < pointList.size() - 1; k++) {
-              System.out.println(j + " " + k + " " + (k+1));
-              rightCheck(j, k, k+1);
-            }
-
-            //bounds check
-            if(j == 0) {
-              rightCheck(j, j+1, pointList.size() - 1);
-            } else if(j == pointList.size() - 1) {
-              rightCheck(j, 0, j - 1);
-            } else {
-              rightCheck(j, 0, pointList.size() - 1);
-            }
-          }
-        });
-        thread.start();
-        threadList.add(thread);
-
-        startLoc += ajustedWorkLoad;
-      }
-    }
-
-    //wait on all threads to finish
-    for(Thread thread : threadList) {
-      try {
-        thread.join();
-      } catch(InterruptedException e) {
-        System.err.println(errThreadJoin);
-        System.exit(1);
-      }
-    }
   }
 
   private void fileFormatChecker() {
@@ -164,19 +113,9 @@ public class Triangles {
     }
   }
 
-  private void rightCheck(int i, int j, int k) {
-    Point p1 = pointList.get(i), p2 = pointList.get(j), p3 = pointList.get(k);
-
-    System.out.print(i + " " + j + " " + k);
-
-    if(Triangle.isTriangle(p1, p2, p3)) {
-      totalTriangles.incrementAndGet();
-      if(Triangle.isRight(p1,p2,p3)) {
-        System.out.println("<-right");
-        totalRightTriangles.incrementAndGet();
-      } else {
-        System.out.println();
-      }
+  private void rightCheck(Point p1, Point p2, Point p3) {
+    if(Triangle.isRight(p1,p2,p3)) {
+      totalRightTriangles.incrementAndGet();
     }
   }
 }

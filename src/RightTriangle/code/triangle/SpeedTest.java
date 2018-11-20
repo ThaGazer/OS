@@ -22,8 +22,8 @@ public class SpeedTest {
     //fillAFile(fileName);
 
     StringBuilder out = new StringBuilder();
-//    out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
-    out.append(handleOutput(TrianglesMapped.class.getSimpleName(), runMain(TrianglesMapped.class, new String[]{args[1], args[2]})));
+    out.append(handleOutput(TrianglesBasic.class.getSimpleName(), runMain(TrianglesBasic.class, new String[]{args[1]})));
+    out.append(handleOutput(TrianglesRecursive.class.getSimpleName(), runMain(TrianglesRecursive.class, new String[]{args[1], args[2]})));
     out.append(handleOutput(Triangles.class.getSimpleName(), runMain(Triangles.class, new String[]{args[1], args[2]})));
 
     System.out.println("\n" + out);
