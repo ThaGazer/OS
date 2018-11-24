@@ -1,3 +1,4 @@
+/*
 
 import org.junit.jupiter.api.*;
 import triangle.*;
@@ -20,4 +21,4 @@ class TriangleTest {
     list.sort(Comparator.naturalOrder());
     System.out.println(list);
   }
-}
+}*/
