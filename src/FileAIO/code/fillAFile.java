@@ -22,7 +22,7 @@ public class fillAFile {
           for(int j = 0; j < amount; j++) {
             byte[] buff = new byte[8];
 
-            long longIn = rnd.nextInt(10);
+            long longIn = j;
             longIn &= 0x7fffffffffffffffL;
 
             for(int k = 0; k < 8; k++) {

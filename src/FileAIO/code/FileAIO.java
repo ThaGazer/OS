@@ -17,8 +17,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 public class FileAIO {
 
@@ -26,6 +25,8 @@ public class FileAIO {
 
   private static final String msgPoolShutDown = "pool has been shutdown";
 
+  private static final String errLogFileCreation =
+      "Could not create log file: ";
   private static final String errUsage = FileAIO.class.getName() +
       " Usage: <filename> <filename>";
   private static final String errSize = "could not read file size";
@@ -38,9 +39,9 @@ public class FileAIO {
 
   private static final int MAXTHREADS = 10;
 
-  private Logger logger = Logger.getLogger(Logfile);
+  private Logger logger;
   private AsynchronousFileChannel left, right;
-  private Map<Long, Long> matches = new TreeMap<>();
+  private TreeMap<Long, Long> matches = new TreeMap<>();
   private ExecutorService pool = Executors.newFixedThreadPool(MAXTHREADS);
 
   private FileAIO(String[] args) {
@@ -48,6 +49,7 @@ public class FileAIO {
       throw new IllegalArgumentException(errUsage);
     }
 
+    setup_logger();
     setFiles(args[0], args[1]);
   }
 
@@ -55,9 +57,27 @@ public class FileAIO {
     FileAIO t = new FileAIO(args);
 
     t.findMatching();
-    t.printMatching();
 
     t.shutDown();
+
+    t.printMatching();
+  }
+
+  private void setup_logger() {
+    LogManager.getLogManager().reset();
+    logger = Logger.getLogger(FileAIO.class.getName());
+
+    try {
+      Handler fileHand = new FileHandler(Logfile);
+      fileHand.setLevel(Level.ALL);
+      logger.addHandler(fileHand);
+    } catch(IOException ioe) {
+      System.err.println(errLogFileCreation + Logfile);
+    }
+
+    Handler consoleHand = new ConsoleHandler();
+    consoleHand.setLevel(Level.SEVERE);
+    logger.addHandler(consoleHand);
   }
 
   private void setFiles(String leftFile, String rightFile) {
@@ -79,21 +99,34 @@ public class FileAIO {
       System.exit(1);
     }
 
-    for(int i = 0; i < (fileSize/8); i++) {
+    for(long i = 0; i < (fileSize/8); i++) {
       ByteBuffer buff = ByteBuffer.allocate(8);
-
       left.read(buff, i*8, buff, new LeftRead());
+    }
+
+    try {
+      fileSize = right.size();
+    } catch(IOException ioe) {
+      logger.log(Level.SEVERE, errSize, ioe);
+      System.exit(1);
+    }
+
+    for(long i = 0; i < (fileSize/8); i++) {
+      ByteBuffer buff = ByteBuffer.allocate(8);
+      right.read(buff, i*8, buff, new RightRead());
     }
   }
 
   private void printMatching() {
-
+    for(Map.Entry<Long, Long> e : matches.entrySet()) {
+      System.out.println(e);
+    }
   }
 
   private void shutDown() {
     try {
-      pool.awaitTermination(5, TimeUnit.SECONDS);
       pool.shutdown();
+      pool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
       logger.info(msgPoolShutDown);
     } catch(InterruptedException ioe) {
       logger.log(Level.SEVERE, errThreadInterrupt, ioe);
@@ -117,7 +150,6 @@ public class FileAIO {
 
       if(matches.put(leftVar, 0L) != null) {
         logger.severe(errDuplicate_int);
-
         System.exit(1);
       }
     }
@@ -128,15 +160,20 @@ public class FileAIO {
     }
   }
 
-  private class RightRead implements CompletionHandler<Integer, Long> {
+  private class RightRead implements CompletionHandler<Integer, ByteBuffer> {
 
     @Override
-    public void completed(Integer result, Long attachment) {
-      //System.out.println("Right");
+    public void completed(Integer result, ByteBuffer attachment) {
+      long rightVar = b2i(attachment.array());
+      logger.log(Level.INFO, "Reading: " + result + " bytes:" + rightVar);
+
+      if(matches.containsKey(rightVar)) {
+        matches.put(rightVar, matches.get(rightVar)+1);
+      }
     }
 
     @Override
-    public void failed(Throwable exc, Long attachment) {
+    public void failed(Throwable exc, ByteBuffer attachment) {
       logger.log(Level.WARNING, errRight + errByteOffset + attachment, exc);
     }
   }
