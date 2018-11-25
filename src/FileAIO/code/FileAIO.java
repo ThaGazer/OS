@@ -12,11 +12,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,15 +24,23 @@ public class FileAIO {
 
   private static final String Logfile = "aio.log";
 
-  private static final String errUsage = FileAIO.class.getName() + " Usage: <filename> <filename>";
+  private static final String msgPoolShutDown = "pool has been shutdown";
+
+  private static final String errUsage = FileAIO.class.getName() +
+      " Usage: <filename> <filename>";
   private static final String errSize = "could not read file size";
+  private static final String errThreadInterrupt =
+      "thread has been interrupted";
+  private static final String errLeft = "Error reading left: ";
+  private static final String errRight = "Error reading right: ";
   private static final String errByteOffset = "bad byte offset";
+  private static final String errDuplicate_int = "Duplicate value found";
 
   private static final int MAXTHREADS = 10;
 
   private Logger logger = Logger.getLogger(Logfile);
   private AsynchronousFileChannel left, right;
-  private Map<Integer, Integer> matches = new HashMap<>();
+  private Map<Long, Long> matches = new TreeMap<>();
   private ExecutorService pool = Executors.newFixedThreadPool(MAXTHREADS);
 
   private FileAIO(String[] args) {
@@ -49,6 +57,7 @@ public class FileAIO {
     t.findMatching();
     t.printMatching();
 
+    t.shutDown();
   }
 
   private void setFiles(String leftFile, String rightFile) {
@@ -62,7 +71,6 @@ public class FileAIO {
   }
 
   private void findMatching() {
-
     long fileSize = 0;
     try {
       fileSize = left.size();
@@ -76,11 +84,20 @@ public class FileAIO {
 
       left.read(buff, i*8, buff, new LeftRead());
     }
-
-    //pool.shutdown();
   }
 
   private void printMatching() {
+
+  }
+
+  private void shutDown() {
+    try {
+      pool.awaitTermination(5, TimeUnit.SECONDS);
+      pool.shutdown();
+      logger.info(msgPoolShutDown);
+    } catch(InterruptedException ioe) {
+      logger.log(Level.SEVERE, errThreadInterrupt, ioe);
+    }
   }
 
   private long b2i(byte[] b) {
@@ -95,23 +112,19 @@ public class FileAIO {
   private class LeftRead implements CompletionHandler<Integer, ByteBuffer> {
     @Override
     public void completed(Integer result, ByteBuffer attachment) {
-      logger.log(Level.INFO, "Reading: " + result + " bytes");
       long leftVar = b2i(attachment.array());
-      System.out.println(leftVar);
-      /*try {
-        for(int i = 0; i < (right.size() / 8); i++) {
-          right.read(attachment, 0, leftVar, new RightRead());
-        }
-      } catch(IOException ioe) {
-        logger.log(Level.SEVERE, errSize, ioe);
+      logger.log(Level.INFO, "Reading: " + result + " bytes:" + leftVar);
+
+      if(matches.put(leftVar, 0L) != null) {
+        logger.severe(errDuplicate_int);
+
         System.exit(1);
-      }*/
+      }
     }
 
     @Override
     public void failed(Throwable exc, ByteBuffer attachment) {
-      logger.log(Level.WARNING, "failed left read on: " +
-          attachment.toString(), exc);
+      logger.log(Level.WARNING, errLeft + errByteOffset, exc);
     }
   }
 
@@ -124,7 +137,7 @@ public class FileAIO {
 
     @Override
     public void failed(Throwable exc, Long attachment) {
-      logger.log(Level.WARNING, "failed right read on: " + attachment, exc);
+      logger.log(Level.WARNING, errRight + errByteOffset + attachment, exc);
     }
   }
 }
