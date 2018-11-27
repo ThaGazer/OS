@@ -246,7 +246,6 @@ public class FileAIO {
 
         //null check even though it should already be initialized
         //add value to a mapping. If the value already exist thats bad
-        System.out.println(leftVar);
         if(matches.put(leftVar, 0L) != null) {
           error_severe(errDuplicate_int, null);
         }
