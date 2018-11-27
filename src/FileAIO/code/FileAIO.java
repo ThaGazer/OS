@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
@@ -82,8 +82,8 @@ public class FileAIO {
 
   private void setFiles(String leftFile, String rightFile) {
     try {
-      left = AsynchronousFileChannelFactory.open(Path.of(leftFile), pool);
-      right = AsynchronousFileChannelFactory.open(Path.of(rightFile), pool);
+      left = AsynchronousFileChannelFactory.open(Paths.get(leftFile), pool);
+      right = AsynchronousFileChannelFactory.open(Paths.get(rightFile), pool);
     } catch(IOException ioe) {
       logger.log(Level.SEVERE, ioe.getMessage(), ioe.fillInStackTrace());
       System.exit(1);
@@ -128,8 +128,13 @@ public class FileAIO {
       pool.shutdown();
       pool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
       logger.info(msgPoolShutDown);
+
+      left.close();
+      right.close();
     } catch(InterruptedException ioe) {
       logger.log(Level.SEVERE, errThreadInterrupt, ioe);
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
 
@@ -145,12 +150,17 @@ public class FileAIO {
   private class LeftRead implements CompletionHandler<Integer, ByteBuffer> {
     @Override
     public void completed(Integer result, ByteBuffer attachment) {
-      long leftVar = b2i(attachment.array());
+      Long leftVar = b2i(attachment.array());
       logger.log(Level.INFO, "Reading: " + result + " bytes:" + leftVar);
 
-      if(matches.put(leftVar, 0L) != null) {
-        logger.severe(errDuplicate_int);
-        System.exit(1);
+      if(matches != null) {
+        if (matches.put(leftVar, 0L) != null) {
+          logger.severe(errDuplicate_int);
+          shutDown();
+          System.exit(1);
+        }
+      } else {
+        logger.log(Level.SEVERE, "for some reason the map is empty");
       }
     }
 
