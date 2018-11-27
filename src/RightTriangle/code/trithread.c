@@ -1,233 +1,169 @@
 /*
  * Author: Justin Ritter
- * Date: 11/13/2018
- * File: triangles.cpp
- *
+ * File: trithread.c
+ * Date: 11/20/2018
  */
 
+#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <pthread.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
+#include <unistd.h>
 #include <fcntl.h>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <thread>
-#include <algorithm>
-#include <atomic>
-#include <string>
 
-using namespace std;
-
-class Point {
-private:
+typedef struct point {
   int x,y;
+} Point;
 
-public:
-  Point(int x, int y) {
-    this->x = x;
-    this->y = y;
-  }
+typedef struct thread_arguments {
+  Point* points;
+  int pointCount, workLoad, index;
+  int rightTriangles;
+} arg_t;
 
-  int getX() {
-    return x;
-  }
+/*
+  calculates the distance between two points
+*/
+double point_distance(Point p1, Point p2) {
+  return abs(((p1.x - p2.x) * (p1.x - p2.x)) + ((p1.y - p2.y) * (p1.y - p2.y)));
+}
 
-  int getY() {
-    return y;
-  }
+/*
+  the work that each thread will do
+*/
+void* threadWork(void* pass_args) {
+  arg_t* args = (arg_t*)pass_args;
+  Point* points = args->points;
+  int size = args->pointCount;
+  int workLoad = args->workLoad;
+  int index = args->index;
 
-  double distance(Point p) {
-    return ((p.getX() - x) * (p.getX() - x)) + 
-	    ((p.getY() - y) * (p.getY() - y));
-  }
+  for(int i = (workLoad*index); i < ((workLoad*index) + workLoad); i++) {
+    for(int j = i+1; j < size-1; j++) {
+      for(int k = j+1; k < size; k++) {
+        double a = point_distance(points[i], points[j]);
+        double b = point_distance(points[i], points[k]);
+        double c = point_distance(points[j], points[k]);
 
-  bool equals(Point p) {
-    return x == p.getX() && y == p.getY();
-  }
-
-  string toString() {
-    stringstream stream;
-    stream << "(" << x << "," << y << ")";
-    return stream.str();
-  }
-
-  bool operator<(Point p) {
-    if(x = p.x) {
-      return y < p.getY();
+        if(a+b == c || a+c == b || b+c == a) {
+          args->rightTriangles++;
+        }
+      }
     }
-    return x < p.getX();
   }
-};
+  return NULL;
+}
 
+/*
+  spawns threads to do work
+*/
+int findRightTriangle
+    (Point* pointList, int pointCount, char* tCount) {
+  int threadCount = atoi(tCount);
+  int sum = 0;
+  if(threadCount > pointCount-2) {
+    threadCount = pointCount-2;
+  }
 
+  if(pointCount >= 3) {
+    pthread_t threads[threadCount];
+    arg_t threadArgs[threadCount];
+    for(int i = 0; i < threadCount; i++) {
+      threadArgs[i].rightTriangles = 0;
+      threadArgs[i].points = pointList;
+      threadArgs[i].pointCount = pointCount;
+      threadArgs[i].workLoad = (pointCount/threadCount);
+      threadArgs[i].index = i;
 
-int nextInt(char* buff, int &pos) {
-  string ret;
+      if(pthread_create(&threads[i], NULL, threadWork, (void*)&threadArgs[i])) {
+        perror("could not create thread\n");
+        exit(1);
+      }
+    }
+
+    for(int i = 0; i < threadCount; i++) {
+      if(pthread_join(threads[i], NULL)) {
+        perror("could not join threads\n");
+        exit(1);
+      }
+
+      sum += threadArgs[i].rightTriangles;
+    }
+  }
+
+  return sum;
+}
+
+/*
+  find next int a char buffer
+*/
+int nextInt(char* buff, int* pos) {
   char c;
-  while((c = buff[pos]) != ' ' && c != '\n') {
-    ret += c;
-    pos++;
+  int i = 0;
+  while((c = buff[*pos]) != ' ' && c != '\n') {
+    i = (c-'0')+i*10;;
+    (*pos)++;
   }
-  pos++;
-   
-  return stoi(ret);
+  (*pos)++;
+
+  return i;
 }
 
-void* readPoints(vector<Point> &pList, char* args) {
+/*
+  reads points in from the file
+*/
+void readPoints(Point** points, int* pointCount, char* filename) {
   int fd;
-  struct stat st;
-  void* mp;
+  struct stat st; //file info
+  void* mp; //mapped buff
 
-  if((fd = open(args, O_RDONLY)) < 0) {
-    perror("Could not open file\n");
+  //open file
+  if((fd = open(filename,O_RDONLY)) < 0) {
+    perror("could not open file");
+    exit(1);
+  }
+  
+  //file statistics
+  if(fstat(fd, &st) < 0) {
+    perror("fstat failed\n");
     exit(1);
   }
 
-  if(fstat(fd, &st)) {
-    perror("fstat Failed\n");
+  //memory map the file
+  if(!(mp = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0))) {
+    perror("mapping failed\n");
     exit(1);
   }
 
-  if(!(mp = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0))) {
-    perror("Mapping failed");
-    exit(1);
-  }
-
-  char* intMap = (char*)mp;
   int readPos = 0;
- 
-  int numPoints;
-  try {
-    numPoints = nextInt(intMap, readPos);
-  } catch(const invalid_argument &ia) {
-    cerr << "Reading points: could not read point count" << endl;
-    exit(1);
+  *pointCount = nextInt(mp, &readPos);
+  *points = malloc(*pointCount * sizeof(Point));
+
+  for(int i = 0; i < *pointCount; i++) {
+    (*points)[i].x = nextInt(mp, &readPos);
+    (*points)[i].y = nextInt(mp, &readPos);
   }
 
-  if(numPoints <= 0) {
-    fprintf(stderr, "Buffer underflow: error number of points: %d", numPoints);
-    exit(1);
-  }
-
-  for(int i = 0; i < numPoints; i++) {
-    int x,y;
-    try {
-      x = nextInt(intMap, readPos);
-      y = nextInt(intMap, readPos);
-    } catch(const invalid_argument &ia) {
-      cerr << "Reading points: point format" << x << " " << y << endl;
-      exit(1);
-    }
-
-    Point tmp(x,y);
-    pList.push_back(tmp);
-  }
+  munmap(mp, st.st_size);
+  close(fd);
 }
 
-bool rightCheck(Point p1, Point p2, Point p3) {
-  double a,b,c, tmp;
-
-  a = p1.distance(p2);
-  b = p1.distance(p3);
-  c = p2.distance(p3);
-
-  if(a > c) {
-    swap(a, c);
-  }
-  if(b > c) {
-    swap(a, c);
-  }
-
-  return (a+b) == c;
-}
-
-void threadedTriangle(atomic<int>& foundTri, int work, int location, vector<Point> pointList) {
-  for(int i = location; i < (location + work) && i < pointList.size(); i++) {
-    Point iPoint = pointList[i];
-
-    for(int j = 0; j+1 < i; j++) {
-      if(rightCheck(iPoint, pointList[j], pointList[j+1])) {
-        ++foundTri;
-      }
-    }
-
-    for(int j = i+1; j < (pointList.size()-1); j++) {
-      if(rightCheck(iPoint, pointList[j], pointList[j+1])) {
-        ++foundTri;
-      }
-    }
-
-    //edge cases
-    if(i == 0) {
-      if(rightCheck(iPoint, pointList[i+1], pointList[pointList.size()-1])) {
-        ++foundTri;
-      }
-    } else if(i == pointList.size()-1) {
-      if(rightCheck(iPoint, pointList[0], pointList[i-1])) {
-        ++foundTri;
-      }
-    } else {
-      if(rightCheck(iPoint, pointList[i-1], pointList[i+1])) {
-        ++foundTri;
-      }
-    }
-  }
-}
-
-int findRightTriangles(vector<Point> pointList, char* args) {
-  int threadCount;
-  try {
-    threadCount = stoi(args);
-
-  } catch(const invalid_argument &ia) {
-    perror("unrecognized number of threads");
-    exit(1);
-  }
-
-  vector<thread> threads;
-  atomic<int> rightTriangle(0);
-  int workLoad = pointList.size() / threadCount;
-  int remainder = pointList.size() % threadCount;
-  int startLoc = 0;
-
-  for(int i = 0; i < threadCount; i++) {
-    int adjWorkLoad = workLoad;
-    if(remainder > 0) {
-      adjWorkLoad++;
-      remainder--;
-    }
-
-    threads.push_back(thread(threadedTriangle, ref(rightTriangle), 
-			    adjWorkLoad, startLoc, pointList));
-
-    startLoc += adjWorkLoad;
-  }
-
-  for(auto& t : threads) {
-    t.join();
-  }
-
-  return rightTriangle.load();
-}
-
-int main(int argc, char* argv[]) {
+int main(int argc, char*argv[]) {
   if(argc < 3 || argc > 3) {
-    fprintf(stderr, "Usage: %s <filename> <thread count>\n", argv[0]);
+    fprintf(stderr, "Usage: %s <filename> <threadCount>\n", argv[0]);
     exit(1);
   }
 
-  vector<Point> pointList;
+  Point* pointList = NULL;
+  int pointCount = 0;
 
-  readPoints(pointList, argv[1]);
-  for(Point p : pointList) {
-    cout << p.toString();
-  }
-  cout << endl;
+  readPoints(&pointList, &pointCount, argv[1]);
 
-  printf("%d\n", findRightTriangles(pointList, argv[2]));
+  fprintf(stdout, "Right triangles: %d\n", findRightTriangle(pointList, pointCount, argv[2]));
+
+  free(pointList);
 
   return 0;
 }

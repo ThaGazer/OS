@@ -12,8 +12,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -26,12 +26,12 @@ public class FileAIO {
   private static final String msgPoolShutDown = "pool has been shutdown";
 
   private static final String errLogFileCreation =
-      "Could not create log file: ";
+          "Could not create log file: ";
   private static final String errUsage = FileAIO.class.getName() +
-      " Usage: <filename> <filename>";
-  private static final String errSize = "could not read file size";
+          " Usage: <filename> <filename>";
+  private static final String errFileSize = "could not read file size";
   private static final String errThreadInterrupt =
-      "thread has been interrupted";
+          "thread has been interrupted";
   private static final String errLeft = "Error reading left: ";
   private static final String errRight = "Error reading right: ";
   private static final String errByteOffset = "bad byte offset";
@@ -42,11 +42,15 @@ public class FileAIO {
 
   private Logger logger;
   private AsynchronousFileChannel left, right;
-  private TreeMap<Long, Long> matches = new TreeMap<>();
+  private ConcurrentSkipListMap<Long, Long> matches =
+          new ConcurrentSkipListMap<>();
+  private List<Long> potentials =
+          Collections.synchronizedList(new ArrayList<>());
   private ExecutorService pool = Executors.newFixedThreadPool(MAXTHREADS);
 
   /**
    * Creates a new FileAIO object
+   *
    * @param args arguments passed to program
    */
   private FileAIO(String[] args) {
@@ -95,7 +99,8 @@ public class FileAIO {
   /**
    * Calls Donahoo's AsynchronousFileChannelFactory to create file channels
    * for left and right files
-   * @param leftFile left file
+   *
+   * @param leftFile  left file
    * @param rightFile right file
    */
   private void setFiles(String leftFile, String rightFile) {
@@ -103,9 +108,7 @@ public class FileAIO {
       left = AsynchronousFileChannelFactory.open(Paths.get(leftFile), pool);
       right = AsynchronousFileChannelFactory.open(Paths.get(rightFile), pool);
     } catch(IOException ioe) {
-      logger.log(Level.SEVERE, ioe.getMessage(), ioe.fillInStackTrace());
-      shutDown();
-      System.exit(1);
+      error_severe(ioe.getMessage(), ioe);
     }
   }
 
@@ -114,65 +117,107 @@ public class FileAIO {
    * When complete, terminates the pool and closes the file channels
    */
   private void findMatching() {
-    long fileSize = 0;
-    try {
-      fileSize = left.size();
-    } catch(IOException ioe) {
-      logger.log(Level.SEVERE, errSize, ioe);
-      shutDown();
-      System.exit(1);
-    }
+    long fileSize = getFileSize(left);
 
-    for(long i = 0; i < (fileSize/8); i++) {
+    for(long i = 0; i < (fileSize / 8); i++) {
       ByteBuffer buff = ByteBuffer.allocate(8);
-      left.read(buff, i*8, buff, new LeftRead());
+      left.read(buff, i * 8, buff, new LeftRead());
     }
 
-    try {
-      fileSize = right.size();
-    } catch(IOException ioe) {
-      logger.log(Level.SEVERE, errSize, ioe);
-      shutDown();
-      System.exit(1);
-    }
+    fileSize = getFileSize(right);
 
-    for(long i = 0; i < (fileSize/8); i++) {
+    for(long i = 0; i < (fileSize / 8); i++) {
       ByteBuffer buff = ByteBuffer.allocate(8);
-      right.read(buff, i*8, buff, new RightRead());
+      right.read(buff, i * 8, buff, new RightRead());
     }
   }
 
   /**
-   * prints out the contents of the map
+   * Gets the file size in bytes
+   *
+   * @param file file to get size of
+   * @return the file size
+   */
+  private long getFileSize(AsynchronousFileChannel file) {
+    long fileSize = -1;
+    try {
+      fileSize = file.size();
+    } catch(IOException ioe) {
+      error_severe(errFileSize, ioe);
+    }
+    return fileSize;
+  }
+
+  /**
+   * prints out the contents of the matches map
    */
   private void printMatching() {
+    //add back in any right values if the left values weren't adding in time
+    for(Long l : potentials) {
+      if(matches.containsKey(l)) {
+        matches.put(l, matches.get(l)+1);
+      }
+    }
+
     for(Map.Entry<Long, Long> e : matches.entrySet()) {
       System.out.println(e);
     }
   }
 
   /**
-   * Terminates the ExecutorService for the asynchronous reads and closes both left and right file channels
+   * Terminates the ExecutorService for the asynchronous reads
+   * and closes both left and right file channels
    */
   private void shutDown() {
     try {
-      pool.shutdown();
-      pool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-      logger.info(msgPoolShutDown);
+      pool.awaitTermination(1, TimeUnit.SECONDS);
+      pool.shutdown(); // Disable new tasks from being submitted
 
-      left.close();
-      right.close();
-    } catch(InterruptedException ioe) {
-      logger.log(Level.SEVERE, errThreadInterrupt, ioe);
-    } catch (IOException e) {
-      logger.log(Level.SEVERE, errClose);
+      // Wait a while for existing tasks to terminate
+      if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+        pool.shutdownNow(); // Cancel currently executing tasks
+        // Wait a while for tasks to respond to being cancelled
+        if (!pool.awaitTermination(60, TimeUnit.SECONDS))
+          System.err.println("Pool did not terminate");
+      }
+      logger.log(Level.INFO, msgPoolShutDown);
+
+      try {
+        left.close();
+      } catch(IOException ioe) {
+        logger.log(Level.SEVERE, errLeft + errClose, ioe);
+        System.exit(1);
+      }
+
+      try {
+        right.close();
+      } catch(IOException ioe) {
+        logger.log(Level.SEVERE, errRight + errClose, ioe);
+        System.exit(1);
+      }
+    } catch (InterruptedException ie) {
+      // (Re-)Cancel if current thread also interrupted
+      pool.shutdownNow();
+      // Preserve interrupt status
+      logger.log(Level.SEVERE, errThreadInterrupt, ie.fillInStackTrace());
+      System.exit(1);
     }
+  }
 
-    //System.exit(1);
+  /**
+   * An error handler function just cause I called this set of code alot
+   * @param msg message to log
+   * @param cause the cause of the error if any
+   */
+  private void error_severe(String msg, Throwable cause) {
+    logger.log(Level.SEVERE, msg, cause);
+    shutDown();
+    System.exit(1);
   }
 
   /**
    * Converts a byte array to an integer
+   *
    * @param b byte array to convert
    * @return convert integer as a long
    */
@@ -190,30 +235,29 @@ public class FileAIO {
    *
    * Stores integers read in into a map
    *
-   * if a duplicate number is inserted program will terminate
+   * If a duplicate number is inserted program will terminate
    */
   private class LeftRead implements CompletionHandler<Integer, ByteBuffer> {
     @Override
     public void completed(Integer result, ByteBuffer attachment) {
-      Long leftVar = b2i(attachment.array());
-      logger.log(Level.INFO, "Reading: " + result + " bytes:" + leftVar);
+      if(result >= 0) {
+        Long leftVar = b2i(attachment.array());
+        logger.log(Level.INFO, "Reading: " + result + " bytes:" + leftVar);
 
-      //null check even though it should already be initialized
-      if(matches != null) {
+        //null check even though it should already be initialized
         //add value to a mapping. If the value already exist thats bad
-        if (matches.put(leftVar, 0L) != null) {
-          logger.severe(errDuplicate_int);
-          shutDown();
-          System.exit(1);
+        System.out.println(leftVar);
+        if(matches.put(leftVar, 0L) != null) {
+          error_severe(errDuplicate_int, null);
         }
       } else {
-        logger.log(Level.SEVERE, "for some reason the map is empty");
+        logger.log(Level.WARNING, errLeft + errByteOffset);
       }
     }
 
     @Override
     public void failed(Throwable exc, ByteBuffer attachment) {
-      logger.log(Level.WARNING, errLeft + errByteOffset, exc);
+      error_severe(errLeft + attachment.toString(), exc);
     }
   }
 
@@ -226,18 +270,24 @@ public class FileAIO {
 
     @Override
     public void completed(Integer result, ByteBuffer attachment) {
-      long rightVar = b2i(attachment.array());
-      logger.log(Level.INFO, "Reading: " + result + " bytes:" + rightVar);
+      if(result >= 0) {
+        long rightVar = b2i(attachment.array());
+        logger.log(Level.INFO, "Reading: " + result + " bytes:" + rightVar);
 
-      //only increment value if key exists
-      if(matches.containsKey(rightVar)) {
-        matches.put(rightVar, matches.get(rightVar)+1);
+        //only increment value if key exists
+        if(matches.containsKey(rightVar)) {
+          matches.put(rightVar, matches.get(rightVar) + 1);
+        } else {
+          potentials.add(rightVar);
+        }
+      } else {
+        logger.log(Level.WARNING, errRight + errByteOffset);
       }
     }
 
     @Override
     public void failed(Throwable exc, ByteBuffer attachment) {
-      logger.log(Level.WARNING, errRight + errByteOffset + attachment, exc);
+      error_severe(errRight + attachment.toString(), exc);
     }
   }
 }

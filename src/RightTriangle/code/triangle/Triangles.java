@@ -83,6 +83,7 @@ public class Triangles {
             for(int k = j + 1; k < pointList.size() - 1; k++) {
               for(int l = k + 1; l < pointList.size(); l++) {
                 //check to see if j,k,l refer to a right triangle
+                System.out.println(j + " " + k + " "+ l);
                 rightCheck(j, k, l);
               }
             }
@@ -163,7 +164,6 @@ public class Triangles {
       }
     } catch(Exception e) {
       System.err.println(errFileFormat + ": " + e.getMessage());
-      System.exit(1);
     }
   }
 }
