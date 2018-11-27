@@ -13,8 +13,10 @@
       <sourceFolder url="file://$MODULE_DIR$/src/Mapping/code" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/MainMemory/code" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/FortuneTeller/code" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/Fileio/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/FileIO/code" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/AIO/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/FileAIO/code" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/FileAIO/data" type="java-resource" />
       <excludeFolder url="file://$MODULE_DIR$/src/AIO/logs" />
     </content>
     <orderEntry type="inheritedJdk" />
